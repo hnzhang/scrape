@@ -1,0 +1,102 @@
+<style type="text/css">#inventory,             #cart {                 width: 100%;             }                          #inventory td {                 border-bottom: solid 1px RGB(225, 225, 255);             }                          #inventory td:nth-child(2) {                 text-align: center;             }                          #inventory td:first-child {                 text-align: center;             }                          #inventory td:last-child input[type=number] {                 width: 3em;             }                          .bold {                 font-weight: bold;             }                          #categories {                 font-size: 0.75em;             }                          #inventory tbody {                 display: block;                 overflow: scroll;                 height: 25em;             }                          #inventory thead {                 display: block;             }                          table#cart {                 border: solid 1px silver;                 border-radius: 0.5em;                 height: 10em;             }                          #cart span {                 fonst-weight: bold;             }                          #cart td {                 text-align: right;             }                          #cart td:first-child {                 text-align: left;             }                          #cart td:nth-child(6) {                 text-align: center;             }                          #cart td input[type=text] {                 width: 100%;             }                          #cart th {                 text-align: right;             }                          #cart th:first-child {                 text-align: left;             }                          #cart th:nth-child(6) {                 text-align: center;             }                          #cart input[type=button] {                 background: RGB(255, 128, 128);             }                          #cart tfoot td {                 font-weight: bold;                 text-align: center;             }
+</style>
+
+       <script>
+            var Order_Deadline = 0
+            var order = {}
+            var vendors = {}
+
+            var urls = {
+                'current_cart': "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec?alt=json&callback=updateInventory&Account=",
+                'template': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/1/public/values?alt=json",
+                'inventory': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json&callback=populate",
+                'post': "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec"
+            }
+
+            /*
+                var urls = {
+            	    'current_cart': "./current_cart.js?",
+            	    'template': "./template.json",
+            	    'inventory': "./inventory.js",
+            	    'post': "http://example.com"
+            	}
+            */
+
+       </script>
+
+
+<div id="SpecialMessages">&nbsp;</div>
+
+<p>&nbsp;</p>
+
+<div>Please click <a href="https://www.teamunify.com/cansksc/UserFiles/File/Fundraising/2015-16/INSTRUCTIONSTOUSETHEGIFTCARDONLINEORDERINGSYSTEM.pdf">here</a> for instructions.</div>
+
+<p>&nbsp;</p>
+
+<hr />
+<table id="cart">
+	<thead>
+		<tr>
+		</tr>
+		<tr>
+			<td colspan="4">Account Email: <input id="setAccountBtn" onclick="changeAccount()" type="button" value="Set Account Email" /></td>
+			<td colspan="3">Pickup date/time<br />
+			<select disabled="true" id="Pickup"><option disabled="disabled" selected="selected" value="">*Select Pickup Option</option> </select></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<th colspan="7">Current Gift Card Order</th>
+		</tr>
+		<tr>
+			<th>Vendor</th>
+			<th>Card</th>
+			<th>Count</th>
+			<th>Subtotal</th>
+			<th>Remit</th>
+			<th>Recurring</th>
+			<th>&nbsp;</th>
+		</tr>
+	</thead>
+	<tfoot>
+		<tr>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td colspan="3" style="text-align: center;">Order:</td>
+			<td id="cart_total_cost" style="text-align: right;">&nbsp;</td>
+			<td id="cart_total_remit" style="text-align: right;">&nbsp;</td>
+			<td colspan="2"><input onclick="submitCart()" style="background: RGB(128,255,128);" type="button" value="Update Order" /></td>
+		</tr>
+	</tfoot>
+	<tbody>
+		<tr>
+			<td colspan="7"><span class="loading">Please wait, updating cart.</span></td>
+		</tr>
+	</tbody>
+</table>
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+
+<table id="inventory">
+	<thead>
+		<tr>
+			<th colspan="4" id="categories">&nbsp;</th>
+		</tr>
+		<tr>
+			<th colspan="4" style="text-align: right;"><input checked="true" disabled="true" type="checkbox" />Recurring?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td colspan="7"><span class="loading">Please wait, updating inventory.</span></td>
+		</tr>
+	</tbody>
+</table>
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
