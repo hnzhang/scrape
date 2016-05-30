@@ -1,0 +1,516 @@
+        <style>
+            #inventory,
+            #cart {
+                width: 100%;
+            }
+            
+            #inventory td {
+                border-bottom: solid 1px RGB(225, 225, 255);
+            }
+            
+            #inventory td:nth-child(2) {
+                text-align: center;
+            }
+            
+            #inventory td:first-child {
+                text-align: center;
+            }
+            
+            #inventory td:last-child input[type=number] {
+                width: 3em;
+            }
+            
+            .bold {
+                font-weight: bold;
+            }
+            
+            #categories {
+                font-size: 0.75em;
+            }
+            
+            #inventory tbody {
+                display: block;
+                overflow: scroll;
+                height: 25em;
+            }
+            
+            #inventory thead {
+                display: block;
+            }
+            
+            table#cart {
+                border: solid 1px silver;
+                border-radius: 0.5em;
+                height: 10em;
+            }
+            
+            #cart span {
+                fonst-weight: bold;
+            }
+            
+            #cart td {
+                text-align: right;
+            }
+            
+            #cart td:first-child {
+                text-align: left;
+            }
+            
+            #cart td:nth-child(6) {
+                text-align: center;
+            }
+            
+            #cart td input[type=text] {
+                width: 100%;
+            }
+            
+            #cart th {
+                text-align: right;
+            }
+            
+            #cart th:first-child {
+                text-align: left;
+            }
+            
+            #cart th:nth-child(6) {
+                text-align: center;
+            }
+            
+            #cart input[type=button] {
+                background: RGB(255, 128, 128);
+            }
+            
+            #cart tfoot td {
+                font-weight: bold;
+                text-align: center;
+            }
+        </style>
+
+        <script>
+            var Order_Deadline = 0
+            var order = {}
+            var vendors = {}
+
+            var urls = {
+                'current_cart': "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec?alt=json&callback=updateInventory&Account=",
+                'template': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/1/public/values?alt=json",
+                'inventory': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json&callback=populate",
+                'post': "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec"
+            }
+
+            /*
+                var urls = {
+            	    'current_cart': "./current_cart.js?",
+            	    'template': "./template.json",
+            	    'inventory': "./inventory.js",
+            	    'post': "http://example.com"
+            	}
+            */
+			function loadJSON(path, success, error)
+			{
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function()
+				{
+					if (xhr.readyState === XMLHttpRequest.DONE) {
+						if (xhr.status === 200) {
+							if (success)
+								success(JSON.parse(xhr.responseText));
+						} else {
+							if (error)
+								error(xhr);
+						}
+					}
+				};
+				xhr.open("GET", path, true);
+				xhr.send();
+			}
+			
+			loadJSON(urls['template'],
+				function(data) { console.log(data); },
+				function(xhr) { console.error(xhr); }
+			);
+			
+			//var jQueryLatest;
+			//document.ready = init()
+			
+			
+			
+			
+			
+			/*
+			
+			jQueryLatest(function () {
+                jQueryLatest.get(
+                        //get the template info; only use the last cell containing data
+                        urls['template'],
+                        function (json) {
+                            //T = JSON.parse(json).feed.entry.slice(-1)[0]
+                            Order_Deadline = ''
+                            Special_Messages = ''
+                            pickups = jQueryLatest("#Pickup")
+                            for (ix in json.feed.entry) {
+                                opt = json.feed.entry[ix].gsx$pickups.$t
+                                pickups.append(jQueryLatest("<option>")
+                                    .attr("value", opt)
+                                    .text(opt))
+                                if (json.feed.entry[ix].gsx$nextorderdate.$t) {
+                                    Order_Deadline = json.feed.entry[ix].gsx$nextorderdate.$t
+                                }
+                                if (json.feed.entry[ix].gsx$specialmessages.$t) {
+                                    Special_Messages = json.feed.entry[ix].gsx$specialmessages.$t
+                                }
+                            }
+                            el = jQueryLatest("#OrderDeadline")
+                                .text(Order_Deadline)
+                            jQueryLatest("#SpecialMessages")
+                                .text(Special_Messages)
+                        }
+                    )
+                    .done(function () {
+                        jQueryLatest.get(
+                            //get the inventory items and call populate to update the inventory form
+                            urls['inventory'],
+                            function (json) {
+                                eval(json)
+                            }
+                        )
+                    })
+                    .done(function () {
+                        //get what we think is the current order from google
+                        getCurrentOrder()
+                        console.log('finished current order')
+                    })
+                    //dim the <body> to %50 whilst fetching from google
+                jQueryLatest.ajaxSetup({
+                    beforeSend: function () {
+                        jQueryLatest("body")
+                            .fadeTo("slow", 0.5)
+                    },
+                    complete: function () {
+                        jQueryLatest("body")
+                            .fadeTo("slow", 1.0)
+                    }
+                })
+            })
+			*/
+
+			
+
+            function populate(json) {
+                //Called when jQueryLatest.get returns the inventory items
+                T = jQueryLatest("#inventory tbody")
+                T.remove()
+                T = jQueryLatest("<tbody></tbody>")
+                    .appendTo(jQueryLatest("#inventory"))
+                var categories = []
+                json.feed.entry.forEach(function (el, ix, ar) {
+                    D = [el.gsx$first.$t, el.gsx$second.$t, el.gsx$third.$t, el.gsx$fourth.$t].filter(function (e) {
+                        return e && true
+                    })
+                    vendors[el.gsx$id.$t] = el.gsx$vendor.$t
+                    num = D.length
+                    category = el.gsx$category.$t
+                    html = ''
+                    if (category != categories[categories.length - 1]) {
+                        html = "<tr><td colspan=4 class='bold'><a name='" + category + "'>" + category + "</a></td></tr>"
+                        categories.push(category)
+                    }
+                    html += "<tr><td width='*'>" + el.gsx$vendor.$t + "</td><td>" + el.gsx$remit.$t + "</td><td>"
+                    if (el.gsx$type.$t) {
+                        html += "(DB)"
+                    }
+                    html += "</td><td>" + D.map(function (obj) {
+                            return '<span><input type=checkbox><input data-price=' + obj + ' id="' + el.gsx$id.$t + '" type="number" min=0> ' + obj + '</span>'
+                        })
+                        .join("<br>")
+                    html += "</td></tr>"
+                    jQueryLatest(html)
+                        .appendTo(T)
+                })
+                jQueryLatest("#categories")
+                    .html(jQueryLatest.map(categories, function (e, ix) {
+                            return '<a href="#' + e + '">' + e + '</a>'
+                        })
+                        .join(" "))
+                jQueryLatest("#inventory input")
+                    .bind('change', function () {
+                        console.log("inventory item changed: +" + this)
+                        updateOrder()
+                        updateCart()
+                    })
+			jQueryLatest("#inventory input").attr("disabled",true)
+		jQueryLatest("#cart input").attr("disabled",true)
+		jQueryLatest("#setAccountBtn").attr("disabled",false)
+            };
+
+            function validate() {
+                var msg = []
+                var validated = true
+                var mailformat = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+                if (!jQueryLatest("#AccountEmail").text().match(mailformat)){
+                	validated = false
+                	msg.push('Please provide a valid email address so we can get your order to you.')
+                }
+                if (null == jQueryLatest("#Pickup").val()){
+                	validated = false
+                	msg.push("Please select pickup option.")
+                }
+                if (!validated){
+                	alert(msg.join("\n"))
+                }
+                return validated
+            };
+
+            function updateOrder() {
+                //update the order object from the inventory form
+                jQueryLatest("#inventory input[type=number]")
+                    .each(function () {
+                        var count = parseInt(this.value)
+                        if (count) {
+                            var vendor_id = this.id
+                            var price = this.dataset['price']
+                            var remit = parseFloat(this.parentElement.parentElement.parentElement.children[1].innerText) / 100.0
+                            var recurring = this.parentElement.children[0]
+                            if (recurring.checked) {
+                                recurring = 'yes'
+                            } else {
+                                recurring = 'no'
+                            }
+                            if (undefined == order[vendor_id])
+                                order[vendor_id] = {}
+                            if (undefined == order[vendor_id][price])
+                                order[vendor_id][price] = {}
+                            order[vendor_id][price]['Recurring'] = recurring
+                            order[vendor_id][price]['Count'] = count
+                            order[vendor_id][price]['Remit'] = remit
+                            active = 'no'
+                            if (0 < count)
+                                active = 'yes'
+                            order[vendor_id][price]['Active'] = active
+                        }
+                    })
+            }
+
+            function updateInventory(data) {
+                //update the inventory form with the json returned from the order_log
+                console.log(data)
+                var TIMESTAMP = 0
+                var ACCOUNT = 1
+                var PICKUP = 2
+                var VENDOR_ID = 3
+                var VENDOR = 4
+                var PRICE = 5
+                var REMIT = 6
+                var COUNT = 7
+                var RECURRING = 8
+                var DEADLINE = 9
+                var ACTIVE = 10
+                var pickup = ''
+
+                for (ix in data) {
+                    pickup = data[ix][PICKUP]
+                    var vendor_id = data[ix][VENDOR_ID]
+                    var price = "$" + data[ix][PRICE] + ".00"
+                    var count = data[ix][COUNT]
+                    var cost = parseFloat(data[ix][PRICE]) * parseInt(count)
+                    var recurring = data[ix][RECURRING]
+                    recurring = (recurring == 'yes')
+                    var active = data[ix][ACTIVE]
+                    active = (active == 'yes')
+                    console.log("active: " + active)
+                    var remit = parseFloat(data[ix][REMIT])
+                    vendor = jQueryLatest("#inventory input[type=number]")
+                        .filter(function () {
+                            return ((this.id == vendor_id) && (this.dataset["price"] == price))
+                        })
+                    try {
+                        vendor.parent()
+                            .children()[0].checked = recurring & active
+                    } catch (e) {
+                        console.log(vendor_id, price, count, recurring)
+                    }
+                    if (active) {
+                        vendor.val(count)
+                    } else {
+                        vendor.val(0)
+                    }
+                }
+                jQueryLatest("#Pickup")
+                    .val(pickup)
+                updateOrder()
+                updateCart()
+            }
+
+            function getCurrentOrder() {
+                script = document.createElement("script")
+                script.setAttribute("type", "text/javascript")
+                script.setAttribute("src", urls['current_cart'] + jQueryLatest("#AccountEmail")
+                    .text() + "&Order_Deadline=" + Order_Deadline)
+                document.getElementsByTagName("head")[0].appendChild(script)
+            }
+
+            function dropItem(e) {
+                //drop an item from the cart
+                console.log(this.parentElement.parentElement.dataset)
+                row = this.parentElement.parentElement.dataset
+                order[row['vendor']][row['price']]['Active'] = 'no'
+                item = jQueryLatest("#inventory input[type=number]")
+                    .filter(function () {
+                        return ((this.id == row['vendor']) && (this.dataset['price'] == row['price']))
+                    })
+                item.parent()
+                    .children()[0].checked = false
+                item.val(0)
+                updateOrder()
+                updateCart()
+            }
+
+            function updateCart() {
+                //update the cart with the current values from the order object
+                costs = 0
+                remits = 0
+                jQueryLatest("#cart tbody")
+                    .remove()
+                for (vendor_id in order) {
+                    for (price in order[vendor_id]) {
+                        active = order[vendor_id][price]['Active']
+                        if ('yes' == active) {
+                            recurring = order[vendor_id][price]['Recurring']
+                            count = order[vendor_id][price]['Count']
+                            remit = order[vendor_id][price]['Remit']
+                            cost = parseInt(count) * parseFloat(price.slice(1))
+                            remittance = cost * parseFloat(remit)
+                            jQueryLatest("#cart")
+                                .append(
+                                    jQueryLatest(
+                                        "<tr data-vendor='" + vendor_id + "' data-price='" + price + "'><td>" + vendors[vendor_id] + "</td>" +
+                                        "<td>" + price + "</td>" +
+                                        "<td>x" + count + "</td>" +
+                                        "<td>$" + cost.toFixed(2) + "</td>" +
+                                        "<td>$" + remittance.toFixed(2) + "</td>" +
+                                        "<td>" + recurring + "</td>" +
+                                        "<td><input type='button' name='dropBtn' value='remove item'></td></tr>"))
+                            costs += cost
+                            remits += remit * cost
+                        }
+                    }
+                }
+                jQueryLatest("#cart_total_cost")
+                    .text("$" + costs.toFixed(2))
+                jQueryLatest("#cart_total_remit")
+                    .text("$" + remits.toFixed(2))
+                jQueryLatest("#cart input[name=dropBtn]")
+                    .click(dropItem)
+            }
+
+            function submitCart(e) {
+                //add the onSubmit handler for the form
+                //e.preventDefault()
+
+                if (validate()) {
+                    updateOrder()
+                    updateCart()
+                    Order = JSON.stringify(order)
+
+                    jQueryLatest.post(
+                            urls['post'], {
+                                Account: jQueryLatest("#AccountEmail")
+                                    .text(),
+                                Order_Deadline: Order_Deadline,
+                                Pickup: jQueryLatest("#Pickup")
+                                    .val(),
+                                Order: Order
+                            }
+                        )
+                        .done(
+                            alert("Thank you for your order. The Fundraising Chair has been notified.")
+                        )
+                } 
+            }
+
+			
+			
+
+            function changeAccount(e) {
+                email = prompt("User Account Email Please:")
+					//jQueryLatest("AccountEmail").text(email)
+					document.getElementById("AccountEmail").textContent = email
+					//getCurrentOrder()
+					//jQueryLatest("#inventory input").attr("disabled",false)
+					//jQueryLatest("#cart input").attr("disabled",false)
+					//jQueryLatest("#Pickup").attr("disabled",false)
+					//jQueryLatest("setAccountBtn").text("Change Account Email")
+            }
+        </script>
+        <div id="SpecialMessages"></div><br>
+	<div>Please click <a href="https://www.teamunify.com/cansksc/UserFiles/File/Fundraising/2015-16/INSTRUCTIONSTOUSETHEGIFTCARDONLINEORDERINGSYSTEM.pdf">here</a> for instructions.</div>
+        <hr>
+        <table id="cart">
+            <thead>
+                <tr>
+					<td colspan=4>Account Email:
+						<input id="setAccountBtn" type="button" value="Set Account Email" onclick="changeAccount()">
+						<br><span id="AccountEmail">aadd</span></td>
+					<td colspan=3>Pickup date/time
+						<br>
+						<select id="Pickup" disabled="true">
+							<option value="" disabled selected>*Select Pickup Option</option>
+						</select>
+					</td>
+                </tr>
+                <tr>
+                    <td>&nbsp </td>
+                </tr>
+                <tr>
+                    <th colspan=7>Current Gift Card Order</th>
+                </tr>
+                <tr>
+                    <th>Vendor</th>
+                    <th>Card</th>
+                    <th>Count</th>
+                    <th>Subtotal</th>
+                    <th>Remit</th>
+                    <th>Recurring</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <td>&nbsp </td>
+                </tr>
+                <tr>
+                    <td colspan=3 style="text-align: center;">Order:
+                        <br><span id="OrderDeadline"></span> </br>
+					</td>
+                    <td id="cart_total_cost" style="text-align: right;"></td>
+                    <td id="cart_total_remit" style="text-align: right;"></td>
+                    <td colspan=2>
+                        <input type="button" value="Update Order" style="background: RGB(128,255,128);" onclick="submitCart()">
+                    </td>
+                </tr>
+            </tfoot>
+            <tbody>
+                <tr>
+                    <td colspan=7><span class="loading">Please wait, updating cart.</span></td>
+                </tr>
+            </tbody>
+        </table>
+        <br>
+        <br>
+        <table id="inventory">
+            <thead>
+                <tr>
+                    <th id="categories" colspan=4 >&nbsp </th>
+                </tr>
+                <tr>
+                    <th colspan=4 style="text-align: right;"></th>
+                        <input type=checkbox disabled=true checked=true />Recurring?
+					</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan=7><span class="loading">Please wait, updating inventory.</span></td>
+                </tr>
+            </tbody>
+        </table>
