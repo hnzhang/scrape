@@ -85,17 +85,24 @@ table #cart {
 }
 </style>
 
-        <script>
+<script>
 var Order_Deadline = 0
 var Special_Messages = ""
+var AccountEmail = ""
 var order = {}
 var vendors = {}
 var urls = {
     'current_cart': "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec?alt=json&callback=updateInventory&Account=",
     'template': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/1/public/values?alt=json",
-    'inventory': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json&callback=populate",
+    //'inventory': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json&callback=populate",
+    'inventory': "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json",
     'post': "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec"
 }
+
+function _getInventory(json){
+	console.log(json);	
+};
+
 function loadJSON(path, success, error) {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
@@ -113,7 +120,7 @@ function loadJSON(path, success, error) {
     xhr.open("GET", path, true);
     xhr.send();
 }
-function _loadInventory() {}
+
 function _getOrderDeadlineAndSpecialMessage(json) {
     var pickupOption = document.getElementById("Pickup");
     var specialMsgControl = document.getElementById("SpecialMessages");
@@ -139,24 +146,38 @@ function _getOrderDeadlineAndSpecialMessage(json) {
         count++;
         if(count == entrySize)
         	break;
-        console.log(count);
+        //console.log(count);
         //console.log(Order_Deadline)
-       // console.log(Special_Messages);
+       	// console.log(Special_Messages);
     }
     specialMsgControl.textContent = Special_Messages;
     pickupOption.disabled = pickupOption.length === 0;
-    console.log(json);
-}
-loadJSON(urls['template'], function(data) {
-    _getOrderDeadlineAndSpecialMessage(data);
-}, function(xhr) {
-    console.error(xhr);
-})
+    //console.log(json);
+    if(pickupOption.disabled == false)
+    {
+    loadJSON( urls['inventory'],
+		  function(data) { _getInventory(data); },
+		  function(xhr) {    console.error(xhr);}	
+		);
+    }
+};
+
+
+
+loadJSON( urls['template'],
+		  function(data) { _getOrderDeadlineAndSpecialMessage(data); },
+		  function(xhr) {    console.error(xhr);}	
+		);
+
+
 function changeAccount(e) {
-    email = prompt("User Account Email Please:")
+    email = prompt("User Account Email Please:");
     //jQueryLatest("AccountEmail").text(email)
-    document.getElementById("AccountEmail").textContent = email
-    //getCurrentOrder()
+    
+    document.getElementById("AccountEmail").textContent = email;
+
+    AccountEmail = email;
+    getCurrentOrder()
     //jQueryLatest("#inventory input").attr("disabled",false)
     //jQueryLatest("#cart input").attr("disabled",false)
     //jQueryLatest("#Pickup").attr("disabled",false)
