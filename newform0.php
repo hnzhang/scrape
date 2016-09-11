@@ -1,3 +1,65 @@
+<?php
+$inventory = array("categories"=>array( ), "vendors"=>array());
+
+
+$AccountEmail = "";
+$VisibleCtl = false;
+function getAccountEmail() {
+	global $AccountEmail, $VisibleCtl;
+
+	$accountKey = 'AccountEmail';
+	if( array_key_exists($accountKey,$_REQUEST)) {
+		$val = trim($_REQUEST[$accountKey]);
+		if(filter_var($val, FILTER_VALIDATE_EMAIL)) {
+			$AccountEmail = $val;
+			$VisibleCtl = true;
+		}
+	}
+}
+$generalMessage = "";
+$pickupOptions = array();
+/*
+	get template data for general instruction, deadline and pickup, etc
+*/
+function getTemplateInfo() {
+
+}
+/*
+	build up  inventory data
+*/
+function getInventoryInfo() {
+	global $AccountEmail, $inventory;
+	echo  "EMail:". $AccountEmail.'<br>';
+	$url_inventory = "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json";
+
+	$json = file_get_contents($url_inventory);
+	$data = json_decode($json, TRUE);
+	$rows = $data['feed']['entry'];
+	$total = 0;
+
+	foreach ($rows as $item) {
+		$id = $item['gsx$id']['$t'];
+		$vendorName   = $item['gsx$vendor']['$t'];
+		$category =  $item['gsx$category']['$t'];
+		$first =  $item['gsx$first']['$t'];
+		//echo '<ul align="left">'. $vendorName . ', '. $category .','. $first .'</ul>';
+		if (! array_key_exists($category, $inventory['categories'])){
+			$inventory['categories'][$category] = array();
+		}
+		$vendor = array($id, $vendorName, $first);
+		$inventory['categories'][$category][$id] = $vendor;
+		$inventory['vendors'][$id] = $vendor;
+	}
+	echo "inventory";
+}
+
+getAccountEmail();
+if($VisibleCtl) {
+	getInventoryInfo();
+	getTemplateInfo();
+}
+?>
+
 <style type="text/css">
 	#inventory, #cart {
 	    width: 100%;
@@ -232,13 +294,9 @@ function changeAccount(e) {
 		</tr>
 	</tbody>
 </table>
-
-<p>&nbsp;</p>
 </div>
 
 <div>Please click <a href="https://www.teamunify.com/cansksc/UserFiles/File/Fundraising/2015-16/INSTRUCTIONSTOUSETHEGIFTCARDONLINEORDERINGSYSTEM.pdf">here</a> for instructions.</div>
-
-<p>&nbsp;</p>
 
 <hr />
 <form method="post" action="postdata.php">
@@ -250,7 +308,7 @@ function changeAccount(e) {
 			<select id="Pickup"> <!-- 							<option value="" disabled selected>*Select Pickup Option</option> 							--> </select></td>
 		</tr>
 		<tr>
-			<td colspan="3"><span id="AccountEmail"><input type="text"/></span></td>
+			<td colspan="3"><span id="AccountEmail"><?php echo $AccountEmail;?></span></td>
 		</tr>
 		<tr>
 			<th colspan="7">Current Gift Card Order:</th>
@@ -316,28 +374,6 @@ function changeAccount(e) {
 			<td colspan="7">
 				<span >
 						<?php
-						$url_inventory = "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json";
-						$inventory = array("categories"=>array( ), "vendors"=>array());
-
-						$json = file_get_contents($url_inventory);
-						$data = json_decode($json, TRUE);
-						$rows = $data['feed']['entry'];
-						$total = 0;
-
-						foreach ($rows as $item) {
-							$id = $item['gsx$id']['$t'];
-						  $vendorName   = $item['gsx$vendor']['$t'];
-						  $category =  $item['gsx$category']['$t'];
-							$first =  $item['gsx$first']['$t'];
-							//echo '<ul align="left">'. $vendorName . ', '. $category .','. $first .'</ul>';
-							if (! array_key_exists($category, $inventory['categories'])){
-								$inventory['categories'][$category] = array();
-							}
-							$vendor = array($id, $vendorName, $first);
-							$inventory['categories'][$category][$id] = $vendor;
-							$inventory['vendors'][$id] = $vendor;
-						}
-
 						foreach ( $inventory['categories'] as $key => $category ){
 							echo '<h3 align="left">'. $key.'</h2>';
 							foreach( $category as $id => $vendor ){
