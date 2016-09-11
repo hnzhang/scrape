@@ -13,11 +13,11 @@ $rows = $data['feed']['entry'];
 $total = 0;
 
 foreach ($rows as $item) {
-  $vender   = $item['gsx$Vender']['$t'];
+  $vender   = $item['gsx$vendor']['$t'];
   $category =  $item['gsx$category']['$t'];
   echo "Vender: ". $vender . "  Type: " . $category . '<br>';
   $total =$total +1;
-  
+
 }
 
 echo "Total:". $total;

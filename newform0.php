@@ -303,26 +303,48 @@ function changeAccount(e) {
 <table id="inventory">
 	<thead>
 		<tr>
-			<th colspan="4" id="categories">&nbsp;</th>
+			<th colspan="4" id="categories"><h2>InVentories:</h2></th>
 		</tr>
+		<!--
 		<tr>
 			<th colspan="4" style="text-align: right;">&nbsp;</th>
 		</tr>
+-->
 	</thead>
 	<tbody>
-
-		<tr>
-			<td colspan="7"><span class="loading" id="inventoryDetails">Please wait, updating inventory.</span></td>
-		</tr>
 		<tr>
 			<td colspan="7">
-				<span class="loading" >
-						<h2 align="left">Retail </h2>
-						<ul align="left">Costco, $12.6</ul>
-						<ul align="left">Walmart,asdfasdfasdfasdf $13.6</ul>
-						<h2 align="left">Retail </h2>
-						<ul align="left">Costco, $12.6</ul>
-						<ul align="left">Walmart,asdfasdfasdfasdf $13.6</ul>
+				<span >
+						<?php
+						$url_inventory = "https://spreadsheets.google.com/feeds/list/1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y/2/public/values?alt=json";
+						$inventory = array("categories"=>array( ), "vendors"=>array());
+
+						$json = file_get_contents($url_inventory);
+						$data = json_decode($json, TRUE);
+						$rows = $data['feed']['entry'];
+						$total = 0;
+
+						foreach ($rows as $item) {
+							$id = $item['gsx$id']['$t'];
+						  $vendorName   = $item['gsx$vendor']['$t'];
+						  $category =  $item['gsx$category']['$t'];
+							$first =  $item['gsx$first']['$t'];
+							//echo '<ul align="left">'. $vendorName . ', '. $category .','. $first .'</ul>';
+							if (! array_key_exists($category, $inventory['categories'])){
+								$inventory['categories'][$category] = array();
+							}
+							$vendor = array($id, $vendorName, $first);
+							$inventory['categories'][$category][$id] = $vendor;
+							$inventory['vendors'][$id] = $vendor;
+						}
+
+						foreach ( $inventory['categories'] as $key => $category ){
+							echo '<h3 align="left">'. $key.'</h2>';
+							foreach( $category as $id => $vendor ){
+								echo '<ul align="left">'.$vendor[1].','. $vendor[2] .'</ul>';
+							}
+						}
+					?>
 			</span></td>
 		</tr>
 
