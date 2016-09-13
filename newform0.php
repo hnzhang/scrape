@@ -61,7 +61,7 @@ function getInventoryInfo() {
 		$vendorName   = $item['gsx$vendor']['$t'];
 		$category =  $item['gsx$category']['$t'];
 		$first =  $item['gsx$first']['$t'];
-		//echo '<ul align="left">'. $vendorName . ', '. $category .','. $first .'</ul>';
+
 		if (! array_key_exists($category, $inventory['categories'])){
 			$inventory['categories'][$category] = array();
 		}
@@ -168,10 +168,13 @@ if($VisibleCtl) {
 	var Order_Deadline = "<?php echo $Order_Deadline  ?>";
 	var Special_Messages = '<?php echo $Special_Messages ?>';
 	var AccountEmail = "<?php echo $AccountEmail  ?>";
-	var order = {};
+	var order = [];
+	var orderEntryCount = 0;
 //id, category, Vender, Type, Raw, Remit, First, Second, Third, forth
 
 	var inventories = <?php echo json_encode( $inventory ) ?>;
+	console.log(inventories);
+
 	function OnSelectPickupOption(){
 
 	}
@@ -185,32 +188,56 @@ if($VisibleCtl) {
 			var el = document.createElement("option");
 			var vendor = inventories["vendors"][v];
 			el.textContent = vendor[1];
-			el.value = v[0];
+			el.value = v;
 			venderList.appendChild( el );
 		}
 	}
 	function OnSelectVendor(selectedVal) {
+		countCtl = document.getElementById("count");
+		countCtl.value = 0;
 
 	}
 	function addSelectedToOrder(){
+		var vendorCtl = document.getElementById("vendor");
+		var vendorId = vendorCtl.value;
+		var count = document.getElementById("count").value;
+		if(count <= 0){
+			displayErrorMsg("Please specify how many card you need!");
+			return false;
+		}
+		console.log(vendorId);
+		//order entry data
+		var vendor = inventories['vendors'][vendorId]
+		console.log(vendor);
+		var price = vendor[2];
+		var vendorName = vendor[1];
+		//TimeStamp, AccountEmail, pickup, Vendor ID, Vendor, Price, Remit, Count, Order_Deadline
+		order_entry = {vendorid:vendorId, vendor:vendorName, price:price};
+		order.push(order_entry);
+		var val = vendorName.concat(vendorName,'/', price);
+		//display data
 		var table = document.getElementById('orderList');
-		/*
-		var rowCount = table.rows.length;
-		var row = table.insertRow(rowCount);
 
-		var cell3 = row.insertCell(0);
-		cell3.innerHTML="test"
-		*/
 		var listItem = document.createElement("li");
 		//create new text node
-		var textNode = document.createTextNode("test");
+		var textNode = document.createTextNode(val);
 		//add text node to li element
 		listItem.appendChild(textNode);
 		//add new list element built in previous steps to unordered list
 		table.appendChild(listItem);
-	}
-	function submitOrder(){
 
+	}
+	function displayErrorMsg(msg) {
+		var  errorMsgCtl = document.getElementById("error_msg");
+		errorMsgCtl.innerHTML = msg;
+	}
+
+	function validateForm(){
+		if(order.length == 0){
+			displayErrorMsg("Empty Cart!");
+			return false;
+		}
+		document.getElementById("order_details").value = JSON.stringify(order);
 	}
 
 </script>
@@ -227,25 +254,30 @@ if($VisibleCtl) {
 		<tr>
 			<td><span >Please click <a href="https://www.teamunify.com/cansksc/UserFiles/File/Fundraising/2015-16/INSTRUCTIONSTOUSETHEGIFTCARDONLINEORDERINGSYSTEM.pdf">here</a> for instructions.</span></td>
 		</tr>
+		<tr>
+			<td><p   id="error_msg" style="color:red"><span style="foreground: RGB(255,255,128);"></p></td>
+		</tr>
 	</tbody>
 </table>
 </div>
 
 <hr />
-<form method="post" action="postdata.php">
+<form method="post" action="process_order.php"  onsubmit="return validateForm()">
 <table id="cart">
 	<thead>
 		<tr>
-			<td colspan="4">Account Email: <?php echo $AccountEmail;?></td>
+			<input type ="hidden" name="Order_Deadline" value ="<?php echo $Order_Deadline?> />
+			<td colspan="2">Account Email:<?php echo $AccountEmail?><input type ="hidden" name="AccountEmail" value ="<?php echo $AccountEmail?>" disabled = "true" size="20"/></td>
 			<td colspan="3">Pickup date/time:
-			<select id="PickupOptions" onchange="OnSelectPickupOption(this.options[this.selectedIndex].value)">
+			<select id="PickupOptions" name="pickupOption" onchange="OnSelectPickupOption(this.options[this.selectedIndex].value)">
 				<option value="disabled">==Select Pickup Option==</option>
 				<?php
 					foreach($PickupOptions as $option) {
 						echo '<option value="'. $option . '">'. $option .'</option>';
 					}
 				?>
-			</select></td>
+			</select>
+		</td>
 		</tr>
 		<tr>
 			<th colspan="7"><hr/></th>
@@ -276,9 +308,9 @@ if($VisibleCtl) {
 					</select>
 			</td><!--category-->
 			<td><select id="vendor"/></td><!--vendor-->
-			<td><input type="number" name="quantity" min="1" id="count" ></td><!--Count-->
-			<td witdh="10%"><input type="text" id="subtotal"/></td><!--Subtotal-->
-			<td witdh="100px"><input type="text" id="remit"/></td><!--Remit-->
+			<td><input type="number"  min="1" id="count" size="10"></td><!--Count-->
+			<td witdh="10%"><input type="text" id="subtotal" size="10"/></td><!--Subtotal-->
+			<td witdh="100px"><input type="text" id="remit" size="10"/></td><!--Remit-->
 			<td witdh="10%"><input type="checkbox"  /></td><!--Recurring-->
 			<td><input onclick="addSelectedToOrder()" style="background: RGB(255,255,128);" type="button" value="Add To Order" /></td><!--Subtotal-->
 		</tr>
@@ -293,11 +325,12 @@ if($VisibleCtl) {
 			<td colspan="3" style="text-align: center;">Current Cart:</td>
 			<td id="cart_total_cost" style="text-align: right;">&nbsp;</td>
 			<td id="cart_total_remit" style="text-align: right;">&nbsp;</td>
-			<td colspan="2"><input onclick="submitCart()" style="background: RGB(128,255,128);" type="button" value="Submit Order" /></td>
+			<input type="hidden" name="order_details" id="order_details" value="" />
+			<td colspan="2"><input  style="background: RGB(128,255,128);" type="submit" value="Submit Order" /></td>
 		</tr>
 	</tfoot>
 	<tbody>
-		<tr id="order_details">
+		<tr>
 			<td><ul id="orderList"></ul></td>
 			<!--<td colspan="7"><span class="loading">Please wait, updating cart.</span></td>-->
 		</tr>
