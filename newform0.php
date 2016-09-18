@@ -15,6 +15,7 @@ function getAccountEmail() {
 		}
 	}
 }
+
 $Special_Messages = "";
 $PickupOptions = array();
 $Order_Deadline = "";
@@ -32,7 +33,6 @@ function getTemplateInfo() {
 		$opt = trim($opt);
 		if (strlen($opt) > 0) {
 				array_push($PickupOptions, $opt);
-				//pickups.append(jQueryLatest("<option>").attr("value", opt).text(opt))
 		}
 		$nextOrderData = trim($item['gsx$nextorderdate']['$t']);
 		if (strlen($nextOrderData) >0) {
@@ -45,6 +45,7 @@ function getTemplateInfo() {
 		}
 	}
 }
+
 /*
 	build up  inventory data
 */
@@ -71,10 +72,24 @@ function getInventoryInfo() {
 	}
 }
 
+function getCurrentDateTime() {
+	date_default_timezone_set('America/Los_Angeles');//pacific time
+	//year/mm/dd hh:mm
+	$datetime = date("m") .'/' . date("d") .'/'. date("Y").' '.date("H"). ':'.date("i");
+	return  $datetime;
+}
+
 getAccountEmail();
+
 if($VisibleCtl) {
-	getInventoryInfo();
+	$today = getCurrentDateTime();
+	echo $today ."<br>";
+	if($today > '09/15/2016')
+	{
+		echo "expired, cannot order <br>";
+	}
 	getTemplateInfo();
+	getInventoryInfo();
 }
 ?>
 <style type="text/css">
@@ -225,7 +240,6 @@ if($VisibleCtl) {
 		listItem.appendChild(textNode);
 		//add new list element built in previous steps to unordered list
 		table.appendChild(listItem);
-
 	}
 	function displayErrorMsg(msg) {
 		var  errorMsgCtl = document.getElementById("error_msg");
