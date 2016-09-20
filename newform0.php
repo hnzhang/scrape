@@ -56,19 +56,20 @@ function getInventoryInfo() {
 	$json = file_get_contents($url_inventory);
 	$data = json_decode($json, TRUE);
 	$rows = $data['feed']['entry'];
-
+	$id = 0;
 	foreach ($rows as $item) {
-		$id = $item['gsx$id']['$t'];
+		//$id = $item['gsx$id']['$t'];
 		$vendorName   = $item['gsx$vendor']['$t'];
 		$category =  $item['gsx$category']['$t'];
 		$first =  $item['gsx$first']['$t'];
-
+		$remit =  $item['gsx$remit']['$t'];
 		if (! array_key_exists($category, $inventory['categories'])){
 			$inventory['categories'][$category] = array();
 		}
-		$vendor = array($id, $vendorName, $first);
+		$vendor = array($id, $vendorName, $first, $remit );
 		$inventory['categories'][$category][$id] = $vendor;
 		$inventory['vendors'][$id] = $vendor;
+		$id += 1;
 	}
 }
 
@@ -82,17 +83,22 @@ function getCurrentDateTime() {
 getAccountEmail();
 
 if($VisibleCtl) {
-	$today = getCurrentDateTime();
-	echo $today ."<br>";
-	if($today > '09/15/2016')
-	{
-		echo "expired, cannot order <br>";
-	}
 	getTemplateInfo();
+	$today = getCurrentDateTime();
+	echo "Current time: ".$today ."<br>";
+	if($today > $Order_Deadline)
+	{
+		echo "Order deadline ".$Order_Deadline." expired, cannot order Anymore. <br>";
+		$Order_Deadline = "";
+		$Special_Messages = "";
+	}
 	getInventoryInfo();
 }
 ?>
 <style type="text/css">
+	.error_msg {
+		background-color: orange;
+	}
 	#inventory, #cart {
 	    width: 100%;
 	}
@@ -117,7 +123,7 @@ if($VisibleCtl) {
 	    font-weight: bold;
 	}
 
-	#categories {
+	.smallfont {
 	    font-size: 0.75em;
 	}
 
@@ -183,16 +189,17 @@ if($VisibleCtl) {
 	var Order_Deadline = "<?php echo $Order_Deadline  ?>";
 	var Special_Messages = '<?php echo $Special_Messages ?>';
 	var AccountEmail = "<?php echo $AccountEmail  ?>";
-	var order = [];
-	var orderEntryCount = 0;
+	var order = {};
+
 //id, category, Vender, Type, Raw, Remit, First, Second, Third, forth
 
 	var inventories = <?php echo json_encode( $inventory ) ?>;
-	console.log(inventories);
+	//console.log(inventories);
 
 	function OnSelectPickupOption(){
-
+		pickupOption = document.getElementById("PickupOptions");
 	}
+
 	function OnSelectCategory(selectedVal) {
 		if(selectedVal === "disabled"){
 			return;
@@ -225,11 +232,14 @@ if($VisibleCtl) {
 		var vendor = inventories['vendors'][vendorId]
 		console.log(vendor);
 		var price = vendor[2];
+		var remit = vendor[3];
 		var vendorName = vendor[1];
 		//TimeStamp, AccountEmail, pickup, Vendor ID, Vendor, Price, Remit, Count, Order_Deadline
+		//temp solution for demo
 		order_entry = {vendorid:vendorId, vendor:vendorName, price:price};
-		order.push(order_entry);
-		var val = vendorName.concat(vendorName,'/', price);
+		order[vendorName]={};
+		order[vendorName][price] = {Remit:remit, Count:count};//remit, count
+		var val = vendorName.concat(vendorName,'/', price, '/', remit, '/', count);
 		//display data
 		var table = document.getElementById('orderList');
 
@@ -241,6 +251,7 @@ if($VisibleCtl) {
 		//add new list element built in previous steps to unordered list
 		table.appendChild(listItem);
 	}
+
 	function displayErrorMsg(msg) {
 		var  errorMsgCtl = document.getElementById("error_msg");
 		errorMsgCtl.innerHTML = msg;
@@ -269,7 +280,7 @@ if($VisibleCtl) {
 			<td><span >Please click <a href="https://www.teamunify.com/cansksc/UserFiles/File/Fundraising/2015-16/INSTRUCTIONSTOUSETHEGIFTCARDONLINEORDERINGSYSTEM.pdf">here</a> for instructions.</span></td>
 		</tr>
 		<tr>
-			<td><p   id="error_msg" style="color:red"><span style="foreground: RGB(255,255,128);"></p></td>
+			<td><p id="error_msg" class="error_msg"></p></td>
 		</tr>
 	</tbody>
 </table>
@@ -280,8 +291,8 @@ if($VisibleCtl) {
 <table id="cart">
 	<thead>
 		<tr>
-			<input type ="hidden" name="Order_Deadline" value ="<?php echo $Order_Deadline?> />
-			<td colspan="2">Account Email:<?php echo $AccountEmail?><input type ="hidden" name="AccountEmail" value ="<?php echo $AccountEmail?>" disabled = "true" size="20"/></td>
+			<input type ="hidden" name="Order_Deadline" value ="<?php echo $Order_Deadline?>" />
+			<td colspan="4" class="smallfont">Account Email: <?php echo $AccountEmail?><input type ="hidden" name="AccountEmail" value ="<?php echo $AccountEmail?>" /></td>
 			<td colspan="3">Pickup date/time:
 			<select id="PickupOptions" name="pickupOption" onchange="OnSelectPickupOption(this.options[this.selectedIndex].value)">
 				<option value="disabled">==Select Pickup Option==</option>
@@ -292,9 +303,6 @@ if($VisibleCtl) {
 				?>
 			</select>
 		</td>
-		</tr>
-		<tr>
-			<th colspan="7"><hr/></th>
 		</tr>
 
 		<tr>
