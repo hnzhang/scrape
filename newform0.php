@@ -19,6 +19,8 @@ function getAccountEmail() {
 $Special_Messages = "";
 $PickupOptions = array();
 $Order_Deadline = "";
+$System_Enabled = false;
+$Error_Message = "";
 /*
 	get template data for general instruction, deadline and pickup, etc
 */
@@ -84,15 +86,21 @@ getAccountEmail();
 
 if($VisibleCtl) {
 	getTemplateInfo();
-	$today = getCurrentDateTime();
-	echo "Current time: ".$today ."<br>";
-	if($today > $Order_Deadline)
+	$today = time();//getCurrentDateTime();
+	//m/d/y
+	$deadline_date = strtotime($Order_Deadline);
+	//$todayStr = getTemplateInfo() ;
+	echo "Current time: ". getCurrentDateTime() ."<br>";
+	if($today < $deadline_date)
 	{
-		echo "Order deadline ".$Order_Deadline." expired, cannot order Anymore. <br>";
-		$Order_Deadline = "";
+		$System_Enabled = true;
+		getInventoryInfo();
+	} else {
+		$System_Enabled = false;
+		//$Order_Deadline = "";
 		$Special_Messages = "";
+		$Error_Message =  "Order deadline ".$Order_Deadline." expired, cannot order Anymore. Please wait for next time";
 	}
-	getInventoryInfo();
 }
 ?>
 <style type="text/css">
@@ -280,7 +288,13 @@ if($VisibleCtl) {
 			<td><span >Please click <a href="https://www.teamunify.com/cansksc/UserFiles/File/Fundraising/2015-16/INSTRUCTIONSTOUSETHEGIFTCARDONLINEORDERINGSYSTEM.pdf">here</a> for instructions.</span></td>
 		</tr>
 		<tr>
-			<td><p id="error_msg" class="error_msg"></p></td>
+			<td><p id="error_msg" class="error_msg">
+				<?php
+					if(strlen($Error_Message) >0 ){
+						echo $Error_Message;
+					}
+				?>
+			</p></td>
 		</tr>
 	</tbody>
 </table>

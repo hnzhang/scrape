@@ -30,6 +30,7 @@ function validateOrderDetails($order_details) {
 }
 
 function postOrderWithCurl( $order_details){
+	//$post_url = "https://script.google.com/macros/s/AKfycbxeF8VkYYNgTI7V2ppGWA3U0udv3WI8UhSQEa6f_RPLcgo6fU4e/exec";//for SKSC new
 	$post_url = "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec";//for SKSC
 	//$post_url = 'https://script.google.com/macros/s/AKfycbzYcZMNXvNuP7pR1yNyLugz-qby4RWWumbdmJbz3J4F5Pu3SBU6/exec';// for test
 	//url-ify the data for the POST
