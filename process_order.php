@@ -1,37 +1,44 @@
 <?php
 
 $order_entries = array();
+$orderDetailsInHTML='';
+$Order_Deadline = "";
+$AccountEmail  = "";
+$PickupOption = "";
+$orderRemitTotal = "";
+$orderTotal = "";
 
 function validateOrderDetails($order_details) {
 	global $Order_Deadline, $AccountEmail, $PickupOption;
 	global $order_entries;
-	echo '<br><br>';
+	global $orderDetailsInHTML;
+	global $orderRemitTotal;
+	global $orderTotal;
+	$orderDetailsInHTML =	'<br><h2>Order Details for your records:<h2>';
 
 	foreach ($order_details as $vendor=> $order_per_price) {
-		echo '<h1>'.$vendor.'</h1>';
-		 $orderOfVendor = array();
+		$orderDetailsInHTML .= '<h3>'.$vendor.'</h3>';
+		$orderOfVendor = array();
 		foreach($order_per_price as $price => $details){
-			echo '<h2>'.$price.'</h2>';
+			$displayStr = '<ul align="left">'. $price. ' * '. $details["Count"] . " Remit: $". $details["RemitVal"] . '  Subtotal: $' . $details["Subtotal"].'</ul>';
+			$orderDetailsInHTML .= $displayStr;
 			$orderPerPrice = array();
 			foreach($details as $key =>$val) {
-				echo $key."--".$val;
 				$orderPerPrice[$key] = $val;
 			}
 			$orderPerPrice["Recurring"] = 'no';
 			$orderPerPrice["Active"] = 'yes';
-			//echo '</h3>';//[remit, count]
 			$orderOfVendor[$price] = $orderPerPrice;
 		}
 		$order_entries[$vendor] = $orderOfVendor;
 	}
-	//echo "<br>~~~~~~~~~~~order_entries------<br>";
-	//var_dump($order_entries);
+	$orderDetailsInHTML .= '<h2>' . 'Remit Total: $' .$orderRemitTotal . '</h2><h2>    Order Total: $' .$orderTotal.'</h2>';
 	return true;
 }
 
 function postOrderWithCurl( $order_details){
-	//$post_url = "https://script.google.com/macros/s/AKfycbxeF8VkYYNgTI7V2ppGWA3U0udv3WI8UhSQEa6f_RPLcgo6fU4e/exec";//for SKSC new
-	$post_url = "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec";//for SKSC
+	$post_url = "https://script.google.com/macros/s/AKfycbxeF8VkYYNgTI7V2ppGWA3U0udv3WI8UhSQEa6f_RPLcgo6fU4e/exec";//for SKSC new
+	//$post_url = "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec";//for SKSC
 	//$post_url = 'https://script.google.com/macros/s/AKfycbzYcZMNXvNuP7pR1yNyLugz-qby4RWWumbdmJbz3J4F5Pu3SBU6/exec';// for test
 	//url-ify the data for the POST
 	foreach($order_details as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
@@ -64,6 +71,7 @@ function postOrderWithCurl( $order_details){
 }
 
 function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $orders_details) {
+	global $orderDetailsInHTML;
 	$to = strip_tags($emailAddress);
 	$subject = 'GiftCard Order; Pickup at ['.$picupOption ."]";
 
@@ -74,14 +82,8 @@ function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $ord
 	$headers .= "CC: giftcards@surreyknights.com\r\nVersion: 1.0\r\n";
 	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 
-	$message .= '<h2>Order Details</h2>';
-	foreach($orders_details as $vendor=>$orderentries) {
-		foreach($orderentries as $price => $entry){
-			$message .= $vendor ."  |  ";
-			$message .= $entry['Remit'] ."  | ". $price ." | ";
-			$message .= $entry['Count'] ."  |<br> ";
-		}
-	}
+	$message .=  $orderDetailsInHTML;
+
 	$message .= "<p> Ususally Order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
 	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
 	$message .= "<p> You make payment of the order onsite of pickup.</p> ";
@@ -91,15 +93,38 @@ function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $ord
 	}
 }
 
+function displayPageHead(){
+	echo '
+	<html>
+	<head>
+		<title>
+			Order Summary--SKSC GiftCard Ordering
+		</title>
+	</head>
+	<body>
+	<h1>Thanks for your GiftCard Order</h1>
+	';
+}
+
+function displayPageEnd() {
+	echo '
+	</body>
+	</html>
+	';
+}
 
 if(!empty($_POST)) {
-
+	displayPageHead();
 		$order_Deadline = $_POST['Order_Deadline'];
 		$accountEmail = $_POST['AccountEmail'];
 		$pickupOption = $_POST['pickupOption'];
-		echo "Order_Deadline:".$order_Deadline.'<br>';
-		echo "AccountEmail:".$accountEmail.'<br>';
-		echo "PickupOptions:".$pickupOption.'<br>';
+		$orderRemitTotal = $_POST['OrderRemitTotal'];
+		$orderTotal = $_POST['OrderTotal'];
+
+
+		echo "<h2>Order_Deadline:".$order_Deadline.'</h2>';
+		echo "<h2>AccountEmail:".$accountEmail.'</h2>';
+		echo "<h2>PickupOptions:".$pickupOption.'</h2>';
 		$order_details = json_decode($_POST["order_details"], true);
 
 		if(!is_null($order_details) ){
@@ -114,9 +139,10 @@ if(!empty($_POST)) {
 				//var_dump($orders_to_post);
 				if(postOrderWithCurl($orders_to_post)){
 					sendEmailNotification($accountEmail,$order_Deadline,$pickupOption, $order_entries);
+					echo $orderDetailsInHTML;
 				}
-
 			}
 		}
+	displayPageEnd();
 }
 ?>

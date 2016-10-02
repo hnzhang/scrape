@@ -6,9 +6,12 @@ if( array_key_exists($accountKey,$_REQUEST)) {
 echo'
 <html>
 <head>
+<title>
+	Welcome--SKSC GiftCard Ordering
+</title>
 </head>
 <body>
-	<form method="post" action="welcome_validate.php"
+	<form method="post" action="welcome_validate.php" autocomplete="on">
 	<table align="center">
 		<tr>
 			<td><image src="sksc.jpg"></td>
@@ -17,12 +20,16 @@ echo'
 			<td>Enter Your SKSC Account Email</td>
 		</tr>
 		<tr>
-			<td><input type="text" name="AccountEmail" size="20"/><input type="submit" id="go" value="GO"/><td>
-		</tr
+			<td>
+				<input type="email" name="AccountEmail" size="20"/>
+				<input type="submit" id="go" value="Go" />
+			</td>
+		</tr>
 	</table>
 	</form>
 </body>
 </html>
+
 	';
 }
 }
