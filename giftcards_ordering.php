@@ -1,6 +1,7 @@
 <?php
+require "giftcards_common.php";
+
 $inventory = array("categories"=>array( ), "vendors"=>array());
-$Spreadsheet_ID = "1VTseFM0BM-x-haK_We9vsd0sWAYrC7gkGU1mSWsOxBg";
 
 $AccountEmail = "";
 $VisibleCtl = false;
