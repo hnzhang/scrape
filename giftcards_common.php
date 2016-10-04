@@ -133,4 +133,76 @@ function reportByPickupOPtionAndAccount($accountEmail, $deadline) {
 	}
 	return array($orderGrp, $accountSummary);
 }
+
+function displayReportForAccount($data){
+	//array($timeStamp, $account_email, $pickup, $vendor, $priceFloat, $remitRateFloat, $countInt));
+	echo '<table>';
+	echo '
+	<tr>
+		<th style="text-align: left;">Order Time</th>
+		<th  style="width: 100px; text-align: left;">pickupOption</th>
+		<th  style="width: 100px; text-align: left;">Account</th>
+		<th  style="width: 100px; text-align: left;">Vendor</th>
+		<th  style="width: 100px; text-align: left;">Price</th>
+		<th  style="width: 100px; text-align: left;">Count</th>
+		<th  style="width: 100px; text-align: left;">Remit</th>
+		<th  style="width: 100px; text-align: left;">Total Due</th>
+	</tr>
+	';
+	$subtotal = 0.0;
+	$totalremit = 0.0;
+	$totalDue = 0.0;
+	foreach($data as $order) {
+		$subtotal = $subtotal + $order[4]*$order[6];
+		$remit =  $order[4]*$order[6]*$order[5];
+		$totalremit = $totalremit + $remit;
+		echo "<tr>";
+			echo "<td>".$order[0]."</td>";
+			echo "<td>".$order[1]."</td>";
+			echo "<td>".$order[2]."</td>";
+			echo "<td>".$order[3]."</td>";
+			echo "<td>".$order[4]."</td>";
+			echo "<td>".$remit."</td>";//
+			echo "<td>".$order[6]."</td>";
+		echo "</tr>";
+	}
+	echo "<tr>";
+		echo "<td></td>";
+		echo "<td></td>";
+		echo "<td></td>";
+		echo "<td></td>";
+		echo "<td> Total: ".$subtotal."</td>";
+		echo "<td> Total Remit: ".$totalremit."</td>";
+		echo "<td> totalDue".$subtotal - $totalremit."</td>";
+	echo "</tr>";
+	echo '</table>';
+
+}
+
+function displayReportForPickup($data) {
+	echo '<table>';
+	echo '
+	<tr >
+		<th style="text-align: left;">Category</th>
+		<th style="text-align: left;">Vendor</th>
+		<th  style="width: 100px; text-align: left;">pickupOption</th>
+		<th  style="width: 100px; text-align: left;">Account</th>
+		<th  style="width: 100px; text-align: left;">Vendor</th>
+		<th  style="width: 100px; text-align: left;">Price</th>
+		<th  style="width: 100px; text-align: left;">Count</th>
+		<th  style="width: 100px; text-align: left;">Remit</th>
+		<th  style="width: 100px; text-align: left;">Total Due</th>
+	</tr>
+	';
+	$pickupList = $data[0];
+	$accountSummary = $data[1];
+	foreach($pickupList as $pickup => $pickupAccounts) {
+		foreach ($pickupAccounts as  => $value) {
+
+		}
+		$displayStr = '<tr>'..'<tr>';
+		echo "string";
+	}
+	echo "</table>";
+}
 ?>
