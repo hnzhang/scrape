@@ -9,12 +9,15 @@ function getAccountEmail() {
 	global $AccountEmail, $VisibleCtl;
 
 	$accountKey = 'AccountEmail';
-	if( array_key_exists($accountKey,$_REQUEST)) {
+	//if( isset($_SESSION, $accountKey )) {
+	if( array_key_exists( $accountKey, $_REQUEST )) {
 		$val = trim($_REQUEST[$accountKey]);
 		if(filter_var($val, FILTER_VALIDATE_EMAIL)) {
 			$AccountEmail = $val;
 			$VisibleCtl = true;
 		}
+	} else {
+		echo "No AccountEmail";
 	}
 }
 
@@ -27,7 +30,6 @@ $System_Enabled = false;
 $Error_Message = "";
 /*
 	get template data for general instruction, deadline and pickup, etc
-*/
 function getTemplateInfo() {
 	global $Special_Messages, $PickupOptions, $Order_Deadline;
 	global $Spreadsheet_ID;
@@ -54,6 +56,7 @@ function getTemplateInfo() {
 	}
 }
 
+*/
 /*
 	build up  inventory data
 */
@@ -96,10 +99,13 @@ function getCurrentDateTime() {
 getAccountEmail();
 
 if($VisibleCtl) {
-	getTemplateInfo();
+	$tempplateInfo = getTemplateInfo();
+	$Special_Messages = $tempplateInfo[0];
+	$PickupOptions= $tempplateInfo[1];
+	$Order_Deadline = $tempplateInfo[2];
 	//m/d/y
 	$deadline_date = strtotime($Order_Deadline);
-	//$todayStr = getTemplateInfo() ;
+
 	$Order_Deadline_Display = date("M/d/Y",$deadline_date);
 	$Current_Time_Display = getCurrentDateTime();
 	$today = time();
@@ -109,7 +115,6 @@ if($VisibleCtl) {
 		getInventoryInfo();
 	} else {
 		$System_Enabled = false;
-		//$Order_Deadline = "";
 		$Special_Messages = "";
 		$Error_Message =  "Order deadline ".$Order_Deadline." expired, cannot order Anymore. Please wait for next time";
 	}
@@ -294,6 +299,19 @@ if($VisibleCtl) {
 			displayErrorMsg("Empty Cart!");
 			return false;
 		}
+
+		orderTotalCtl = document.getElementById("OrderTotal");
+		orderTotalStr = orderTotalCtl.value;
+		console.log("order log:" + orderTotalStr);
+		if(orderTotalStr.length === 0  || parseFloat(orderTotalStr) <= 0.01 ) {
+			displayErrorMsg("Empty order! No worth to sumbit");
+			return false;
+		}
+		pickupOptionCtl = document.getElementById("PickupOptions");
+		if(pickupOptionCtl.options[pickupOptionCtl.selectedIndex].value === "disabled") {
+			displayErrorMsg("Please choose pickup option!");
+			return false;
+		}
 		document.getElementById("order_details").value = JSON.stringify(order);
 	}
 
@@ -381,11 +399,11 @@ if($VisibleCtl) {
 		<tr >
 			<th style="text-align: left;">Category</th>
 			<th style="text-align: left;">Vendor</th>
-			<th  styple="width: 100px; text-align: left; ">Card</th>
-			<th  style="width: 100px; text-align: left;">Count</th>
-			<th  style="width: 100px; text-align: left;">Remit</th>
-			<th  style="width: 100px; text-align: left;">Subtotal</th>
-			<th  style="width: 150px; text-align: left;"></th>
+			<th style="width: 100px; text-align: left; ">Card</th>
+			<th style="width: 100px; text-align: left;">Count</th>
+			<th style="width: 100px; text-align: left;">Remit</th>
+			<th style="width: 100px; text-align: left;">Subtotal</th>
+			<th style="width: 150px; text-align: left;"></th>
 		</tr>
 		<tr>
 			<td><!--category-->

@@ -72,26 +72,31 @@ function reportByVendorAndPrice($accountEmail, $deadline) {
 	$orderGrp = array();
 	$vendorSummary = array();
 	foreach ($orders as $order) {
-		$vendor = $order[3];
-		$count = $order[6]);
+		$vendorName = $order[3];
+		$count = $order[6];
 		$price = $order[4];
 		$priceStr= strval($price);
 		$subtotal= $price * $count;
-		if(array_key_exists($orderGrp, $vendor)) {
-			$vendor = $orderGrp[$vendor];
-			$if(array_key_exists($vendor, $priceStr)){
+		if(array_key_exists($orderGrp, $vendorName)) {
+			$vendor = $orderGrp[$vendorName];
+
+			if(array_key_exists($vendor, $priceStr ) ) {
 				$vendorCard = $vendor[$priceStr];
 				$vendorCard[0] = $vendorCard[0] + $count;
 				$vendorCard[1] = $vendorCard[1] + $subtotal;
+			} else {
+				array_push($vendor, $priceStr,  array($count, $subtotal));
 			}
+
 		} else {
-			$vendor = array($priceStr, array($count, $subtotal));
+			array_push($orderGrp, $vendorName, array($priceStr=> array($count, $subtotal)));
 		}
-		if(array_key_exists($vendorSummary, $vendor)){
+
+		if(array_key_exists($vendorSummary, $vendorName)){
 			$summary = $vendorSummary[$vendor];
 			$vendorSummary[$vendor] = $summary + $subtotal;
 		} else {
-			array_push($vendorSummary, $vendor, $subtotal);
+			array_push($vendorSummary, $vendorName, $subtotal);
 		}
 	}
 	return array($orderGrp, $vendorSummary);
@@ -105,7 +110,7 @@ function reportByPickupOPtionAndAccount($accountEmail, $deadline) {
 		$pickupOption = $order[2];
 		$accountEmail = $order[1];
 		$remitRate = trim($order[5]);
-		$count = $order[6]);
+		$count = $order[6];
 		$price = $order[4];
 
 		$subtotal= $price * $count;
@@ -176,7 +181,6 @@ function displayReportForAccount($data){
 		echo "<td> totalDue".$subtotal - $totalremit."</td>";
 	echo "</tr>";
 	echo '</table>';
-
 }
 
 function displayReportForPickup($data) {
@@ -197,10 +201,10 @@ function displayReportForPickup($data) {
 	$pickupList = $data[0];
 	$accountSummary = $data[1];
 	foreach($pickupList as $pickup => $pickupAccounts) {
-		foreach ($pickupAccounts as  => $value) {
+		foreach ($pickupAccounts as $key => $value) {
 
 		}
-		$displayStr = '<tr>'..'<tr>';
+		//$displayStr = '<tr>'..'<tr>';
 		echo "string";
 	}
 	echo "</table>";
