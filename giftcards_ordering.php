@@ -130,8 +130,10 @@ if($VisibleCtl) {
 //id, category, Vender, Type, Raw, Remit, First, Second, Third, forth
 
 	var inventories = <?php echo json_encode( $inventory ) ?>;
-	//console.log(inventories);
 
+	function formatMoneyToCAD( amount ) {
+		return amount.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' });
+	}
 	function OnSelectPickupOption(){
 		pickupOption = document.getElementById("PickupOptions");
 	}
@@ -223,10 +225,11 @@ if($VisibleCtl) {
 					OrderRemitTotal += parseFloat(order[vendorName][price].RemitVal);
 			}
 		}
+
 		var totalCostCtl = document.getElementById("order_total_cost");
-		totalCostCtl.innerHTML = "Total: $" + OrderTotal;
+		totalCostCtl.innerHTML = "Total: $" + formatMoneyToCAD(OrderTotal);
 		var totalRemitCtl = document.getElementById("order_total_remit");
-		totalRemitCtl.innerHTML = "Total Remit: $" + OrderRemitTotal;
+		totalRemitCtl.innerHTML = "Total Remit: $" + formatMoneyToCAD(OrderRemitTotal);
 
 		document.getElementById("OrderTotal").value = OrderTotal;
 		document.getElementById("OrderRemitTotal").value = OrderRemitTotal;
@@ -273,6 +276,7 @@ if($VisibleCtl) {
 		//change selected id of category
 		cateGoryControl = document.getElementById("category");
 		cateGoryControl.selectedIndex = 0;
+		vendorCtl.selectedIndex = 0;
 
 		//for display
 		var val = vendorName.concat(vendorName,'  ', price, ' * ', count, '   Remit $', RemitVal, '   subtotal $', SubTotal );
