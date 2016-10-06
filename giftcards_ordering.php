@@ -161,10 +161,7 @@ if($VisibleCtl) {
 		OnSelectVendor("disabled");
 	}
 
-
-
 	function OnSelectVendor(selectedVal) {
-		//$vendor = array($id, $vendorName, $first, $second, $third, $fourth,$remit );
 		var countCtl = document.getElementById("vendor_card_count");
 		countCtl.value = 0;
 		var priceCtl = document.getElementById("vendor_price");
@@ -237,7 +234,11 @@ if($VisibleCtl) {
 
 	function addSelectedToOrder(){
 		var vendorCtl = document.getElementById("vendor_name");
-		var vendorId = vendorCtl.value;
+		var vendorId = vendorCtl.options[vendorCtl.selectedIndex].value;
+		if(vendorId == "disabled") {
+			displayErrorMsg("Invalid selection of Vendor!");
+			return false;
+		}
 		var count = document.getElementById("vendor_card_count").value;
 		if(count <= 0){
 			displayErrorMsg("Please specify how many card you need!");
@@ -287,6 +288,9 @@ if($VisibleCtl) {
 		table.appendChild(listItem);
 		//update Total and Total Remit;
 		UpdateTotalAndTotalRemitDisplay();
+
+		//clear error message;
+		displayErrorMsg("");
 	}
 
 	function displayErrorMsg(msg) {
@@ -300,6 +304,12 @@ if($VisibleCtl) {
 			return false;
 		}
 
+		pickupOptionCtl = document.getElementById("PickupOptions");
+		if(pickupOptionCtl.options[pickupOptionCtl.selectedIndex].value === "disabled") {
+			displayErrorMsg("Please choose pickup option!");
+			return false;
+		}
+
 		orderTotalCtl = document.getElementById("OrderTotal");
 		orderTotalStr = orderTotalCtl.value;
 		console.log("order log:" + orderTotalStr);
@@ -307,14 +317,9 @@ if($VisibleCtl) {
 			displayErrorMsg("Empty order! No worth to sumbit");
 			return false;
 		}
-		pickupOptionCtl = document.getElementById("PickupOptions");
-		if(pickupOptionCtl.options[pickupOptionCtl.selectedIndex].value === "disabled") {
-			displayErrorMsg("Please choose pickup option!");
-			return false;
-		}
+
 		document.getElementById("order_details").value = JSON.stringify(order);
 	}
-
 </script>
 
 <style type="text/css">

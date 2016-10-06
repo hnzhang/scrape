@@ -1,6 +1,7 @@
 <?php
 //retrieve pickip options, order deadline and Special_Messages
-$Spreadsheet_ID = "1VTseFM0BM-x-haK_We9vsd0sWAYrC7gkGU1mSWsOxBg";
+$Spreadsheet_ID = "1VTseFM0BM-x-haK_We9vsd0sWAYrC7gkGU1mSWsOxBg";//new id
+//$Spreadsheet_ID = '1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y';
 $GetOrder_URL = "https://spreadsheets.google.com/feeds/list/".$Spreadsheet_ID."/3/public/values?alt=json";
 function getTemplateInfo() {
 	global $Spreadsheet_ID;
@@ -102,8 +103,8 @@ function reportByVendorAndPrice($accountEmail, $deadline) {
 	return array($orderGrp, $vendorSummary);
 }
 
-function reportByPickupOPtionAndAccount($accountEmail, $deadline) {
-	$orders = getOrderWithAccountAndDeadline("", $deadline);
+function reportByPickupOptionAndAccount($accountEmail, $deadline) {
+	$orders = getOrderWithAccountAndDeadline($accountEmail, $deadline);
 	$orderGrp = array();
 	$accountSummary = array();
 	foreach ($orders as $order) {
@@ -126,8 +127,8 @@ function reportByPickupOPtionAndAccount($accountEmail, $deadline) {
 		else {
 			array_push($orderGrp, $pickupOption, array($accountEmail => array($pickupItem)));
 		}
-		if(array_key_exists($accountSummary, $accountEmail))
-		{
+
+		if(array_key_exists($accountEmail, $accountSummary)){
 			array_push($accountSummary, array( $subtotal,$subtotal - $remitTotal, $remitTotal));
 		} else {
 			$accountSummaryPerClient = $accountSummary[$accountEmail];
@@ -140,52 +141,55 @@ function reportByPickupOPtionAndAccount($accountEmail, $deadline) {
 }
 
 function displayReportForAccount($data){
-	//array($timeStamp, $account_email, $pickup, $vendor, $priceFloat, $remitRateFloat, $countInt));
-	echo '<table>';
-	echo '
+	$displayStr ='<table>
 	<tr>
 		<th style="text-align: left;">Order Time</th>
-		<th  style="width: 100px; text-align: left;">pickupOption</th>
 		<th  style="width: 100px; text-align: left;">Account</th>
-		<th  style="width: 100px; text-align: left;">Vendor</th>
-		<th  style="width: 100px; text-align: left;">Price</th>
-		<th  style="width: 100px; text-align: left;">Count</th>
-		<th  style="width: 100px; text-align: left;">Remit</th>
-		<th  style="width: 100px; text-align: left;">Total Due</th>
+		<th  style="width: 300px; text-align: left;">PickupOption</th>
+		<th  style="width: 200px; text-align: left;">Vendor</th>
+		<th  style="width: 50px; text-align: left;">Price</th>
+		<th  style="width: 50px; text-align: left;">Count</th>
+		<th  style="width: 50px; text-align: left;">Remit</th>
+		<!--<th  style="width: 50px; text-align: left;">Total Due</th> -->
 	</tr>
 	';
+	//array($timeStamp, $account_email, $pickup, $vendor, $priceFloat, $remitRateFloat, $countInt));
 	$subtotal = 0.0;
 	$totalremit = 0.0;
 	$totalDue = 0.0;
+	setlocale(LC_MONETARY, 'en_CA');
+
 	foreach($data as $order) {
 		$subtotal = $subtotal + $order[4]*$order[6];
 		$remit =  $order[4]*$order[6]*$order[5];
 		$totalremit = $totalremit + $remit;
-		echo "<tr>";
-			echo "<td>".$order[0]."</td>";
-			echo "<td>".$order[1]."</td>";
-			echo "<td>".$order[2]."</td>";
-			echo "<td>".$order[3]."</td>";
-			echo "<td>".$order[4]."</td>";
-			echo "<td>".$remit."</td>";//
-			echo "<td>".$order[6]."</td>";
-		echo "</tr>";
+		$displayStr .= "<tr>";
+			$displayStr .= "<td>".$order[0]."</td>";
+			$displayStr .= "<td>".$order[1]."</td>";
+			$displayStr .= "<td>".$order[2]."</td>";
+			$displayStr .= "<td>".$order[3]."</td>";
+			$displayStr .= "<td>".money_format('%i', $order[4])."</td>";
+			$displayStr .= "<td>".$order[6]."</td>";//count
+			$displayStr .= "<td>".money_format('%i', $remit)."</td>";//remit
+		$displayStr .= "</tr>";
 	}
-	echo "<tr>";
-		echo "<td></td>";
-		echo "<td></td>";
-		echo "<td></td>";
-		echo "<td></td>";
-		echo "<td> Total: ".$subtotal."</td>";
-		echo "<td> Total Remit: ".$totalremit."</td>";
-		echo "<td> totalDue".$subtotal - $totalremit."</td>";
-	echo "</tr>";
-	echo '</table>';
+	$displayStr .= '<tr><td collspan="7"><br></td></td>';
+	$displayStr .= "<tr>";
+		$displayStr .= "<td></td><td></td>";
+		$displayStr .= "<td></td>";
+		$displayStr .= "<td> TotalValue: ".money_format('%i', $subtotal)."</td>";
+		$displayStr .= "<td> Total Remit: ".money_format('%i', $totalremit)."</td>";
+		$displayStr .= "<td></td>";
+		$displayStr .= "<td> Total Due: ". money_format('%i', $subtotal - $totalremit) ."</td>";
+	$displayStr .= "</tr>";
+	$displayStr .= '</table>';
+
+	return $displayStr;
 }
 
 function displayReportForPickup($data) {
-	echo '<table>';
-	echo '
+	$displayStr =
+	'<table>
 	<tr >
 		<th style="text-align: left;">Category</th>
 		<th style="text-align: left;">Vendor</th>

@@ -14,14 +14,14 @@ function validateOrderDetails($order_details) {
 	global $orderDetailsInHTML;
 	global $orderRemitTotal;
 	global $orderTotal;
-	$orderDetailsInHTML =	'<br><h2>Order Details for your records:<h2>';
+	//$orderDetailsInHTML =	'<br><h2>Order Details for your records:<h2>';
 
 	foreach ($order_details as $vendor=> $order_per_price) {
-		$orderDetailsInHTML .= '<h3>'.$vendor.'</h3>';
+		//$orderDetailsInHTML .= '<h3>'.$vendor.'</h3>';
 		$orderOfVendor = array();
 		foreach($order_per_price as $price => $details){
-			$displayStr = '<ul align="left">'. $price. ' * '. $details["Count"] . " Remit: $". $details["RemitVal"] . '  Subtotal: $' . $details["Subtotal"].'</ul>';
-			$orderDetailsInHTML .= $displayStr;
+			//$displayStr = '<ul align="left">'. $price. ' * '. $details["Count"] . " Remit: $". $details["RemitVal"] . '  Subtotal: $' . $details["Subtotal"].'</ul>';
+			//$orderDetailsInHTML .= $displayStr;
 			$orderPerPrice = array();
 			foreach($details as $key =>$val) {
 				$orderPerPrice[$key] = $val;
@@ -32,7 +32,7 @@ function validateOrderDetails($order_details) {
 		}
 		$order_entries[$vendor] = $orderOfVendor;
 	}
-	$orderDetailsInHTML .= '<h2>' . 'Remit Total: $' .$orderRemitTotal . '</h2><h2>    Order Total: $' .$orderTotal.'</h2>';
+	//$orderDetailsInHTML .= '<h2>' . 'Remit Total: $' .$orderRemitTotal . '</h2><h2>    Order Total: $' .$orderTotal.'</h2>';
 	return true;
 }
 
@@ -70,19 +70,18 @@ function postOrderWithCurl( $order_details){
 	return $result === TRUE;
 }
 
-function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $orders_details) {
-	global $orderDetailsInHTML;
+function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $email_body) {
+	//global $orderDetailsInHTML;
 	$to = strip_tags($emailAddress);
 	$subject = 'GiftCard Order; Pickup at ['.$picupOption ."]";
 
-	//$headers = "From: " . strip_tags($_POST['req-email']) . "\r\n";
 	$headers = "From: giftcards@surreyknights.net\r\n";
 	$headers .= "Reply-To: giftcards@surreyknights.net\r\n";
 	//$headers .= "CC: fundraising@surreyknights.com\r\nVersion: 1.0\r\n";
 	$headers .= "CC: giftcards@surreyknights.com\r\nVersion: 1.0\r\n";
 	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 
-	$message .=  $orderDetailsInHTML;
+	$message .= $email_body;
 
 	$message .= "<p> Ususally Order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
 	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
@@ -136,10 +135,12 @@ if(!empty($_POST)) {
 					'Pickup' => $pickupOption,
 					'Order' =>json_encode($order_entries)
 					);
-				//var_dump($orders_to_post);
+
 				if(postOrderWithCurl($orders_to_post)){
-					sendEmailNotification($accountEmail,$order_Deadline,$pickupOption, $order_entries);
-					echo $orderDetailsInHTML;
+					$orders = getOrderWithAccountAndDeadline("greganddonnacook@gmail.com", "10/31/2015");
+					$displayStr = displayReportForAccount($orders);
+					sendEmailNotification($accountEmail,$order_Deadline,$pickupOption, $displayStr);
+					echo $displayStr;
 				}
 			}
 		}
