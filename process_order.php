@@ -1,4 +1,5 @@
-om<?php
+<?php
+require "giftcards_common.php";
 
 $order_entries = array();
 $orderDetailsInHTML='';
@@ -14,14 +15,10 @@ function validateOrderDetails($order_details) {
 	global $orderDetailsInHTML;
 	global $orderRemitTotal;
 	global $orderTotal;
-	//$orderDetailsInHTML =	'<br><h2>Order Details for your records:<h2>';
 
 	foreach ($order_details as $vendor=> $order_per_price) {
-		//$orderDetailsInHTML .= '<h3>'.$vendor.'</h3>';
 		$orderOfVendor = array();
 		foreach($order_per_price as $price => $details){
-			//$displayStr = '<ul align="left">'. $price. ' * '. $details["Count"] . " Remit: $". $details["RemitVal"] . '  Subtotal: $' . $details["Subtotal"].'</ul>';
-			//$orderDetailsInHTML .= $displayStr;
 			$orderPerPrice = array();
 			foreach($details as $key =>$val) {
 				$orderPerPrice[$key] = $val;
@@ -32,7 +29,6 @@ function validateOrderDetails($order_details) {
 		}
 		$order_entries[$vendor] = $orderOfVendor;
 	}
-	//$orderDetailsInHTML .= '<h2>' . 'Remit Total: $' .$orderRemitTotal . '</h2><h2>    Order Total: $' .$orderTotal.'</h2>';
 	return true;
 }
 
@@ -55,19 +51,21 @@ function postOrderWithCurl( $order_details){
 	echo "Send Orders...<br>";
 
 	//execute post
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	$result = curl_exec($ch);
+	$success = false;
 	if($result === FALSE){
 		echo "Failed<br>";
 	}
 	else {
+		$success = true;
 		echo "<br><br><br>Your Order Has been submit successfully!<br>";
-
 		echo "<br>Thank you for your order. The Fundraising Chair has been notified.<br>";
 	}
 
 	//close connection
 	curl_close($ch);
-	return $result === TRUE;
+	return $success;
 }
 
 function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $email_body) {
@@ -135,9 +133,8 @@ if(!empty($_POST)) {
 					'Pickup' => $pickupOption,
 					'Order' =>json_encode($order_entries)
 					);
-
 				if(postOrderWithCurl($orders_to_post)){
-					$orders = getOrderWithAccountAndDeadline("greganddonnacook@gmail.com", "10/31/2015");
+					$orders = getOrderWithAccountAndDeadline($accountEmail, $order_Deadline);
 					$displayStr = displayReportForAccount($orders);
 					sendEmailNotification($accountEmail,$order_Deadline,$pickupOption, $displayStr);
 					echo $displayStr;

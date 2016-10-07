@@ -147,9 +147,9 @@ function displayReportForAccount($data){
 		return;
 	}
 	$accountEmail = $data[0][1];
-	$displayStr =.'<th  collspan="6">Account: '.$accountEmail.'</th>';
-	$displayStr =.'</tr>';
-	$displayStr =.'
+	$displayStr .='<th  collspan="6">Account: '.$accountEmail.'</th>';
+	$displayStr .='</tr>';
+	$displayStr .='
 		<th style="text-align: left;">Order Time</th>
 		<th  style="width: 300px; text-align: left;">PickupOption</th>
 		<th  style="width: 200px; text-align: left;">Vendor</th>
@@ -230,8 +230,7 @@ function displayReportForPickup($data) {
 		}
 	}//for orderitems
 
-	$displayStr.'</td>';
-	 .="</table>";
+	$displayStr.='</td></table>';
 
 	$summaryDisplayStr ='<table><tr><th  style="width: 100px; text-align: left;">Account</th>
 			<th  style="width: 200px; text-align: left;">Total Value</th>
@@ -240,7 +239,7 @@ function displayReportForPickup($data) {
 		</tr>';
 	foreach ($accountSummary as $accountEmail => $summary) {
 		$summaryDisplayStr .='<tr>
- 				<th  style="width: 100px; text-align: left;">'$accountEmail'</th>
+ 				<th  style="width: 100px; text-align: left;">'.$accountEmail.'</th>
 				<th  style="width: 200px; text-align: left;">'. money_format('%i',$summary[0]) . '</th>
 				<th  style="width: 100px; text-align: left;">'. money_format('%i',$summary[1]) . '</th>
 				<th  style="width: 100px; text-align: left;">'. money_format('%i',$summary[2]) . '</th>
@@ -298,6 +297,5 @@ function displayReportForPurchase($deadline) {
 
 	$returnStr .= '</tr></table';
 	return $returnStr;
-
 }
 ?>
