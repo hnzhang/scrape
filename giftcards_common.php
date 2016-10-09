@@ -3,6 +3,11 @@
 $Spreadsheet_ID = "1VTseFM0BM-x-haK_We9vsd0sWAYrC7gkGU1mSWsOxBg";//new id
 //$Spreadsheet_ID = '1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y';
 $GetOrder_URL = "https://spreadsheets.google.com/feeds/list/".$Spreadsheet_ID."/3/public/values?alt=json";
+function isSuperEmail($emailAddress) {
+	$emailList = array("giftcards@surreyknights.com", "fundraising@surreyknights.com");
+	return in_array($emailAddress, $emailList);
+}
+
 function getTemplateInfo() {
 	global $Spreadsheet_ID;
 
@@ -34,6 +39,43 @@ function getTemplateInfo() {
 	return array($Special_Messages, $PickupOptions, $Order_Deadline);
 }
 //if $accountEmail is zero sized, return all
+
+function getOrderWithAccountAndDeadline_old($accountEmail, $deadline) {
+	$Spreadsheet_ID_old = '1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y';
+
+	$GetOrder_URL_old = "https://spreadsheets.google.com/feeds/list/".$Spreadsheet_ID_old."/3/public/values?alt=json";
+	$orders = array();
+
+	$json = file_get_contents($GetOrder_URL_old);
+	$data = json_decode($json, TRUE);
+	$rows = $data['feed']['entry'];
+	foreach($rows as $item) {
+		$account_email = $item['gsx$account']['$t'];
+		$orderDeadline = $item['gsx$orderdeadline']['$t'];
+
+		if($orderDeadline === $deadline && ( strlen($accountEmail) === 0  || $accountEmail == $account_email ) ) {
+			$timeStamp = $item['gsx$timestamp']['$t'];
+			$pickup =  $item['gsx$pickup']['$t'];
+			$vendor = $item['gsx$vendor']['$t'];
+			$price = $item['gsx$price']['$t'];
+			$remit = $item['gsx$remit']['$t'];
+
+			$count = $item['gsx$count']['$t'];
+
+			$remitRate = trim($remit);
+			$remitRateFloat = floatVal($remitRate)/100.0;//trim off % sign;
+			$countInt = intVal($count);
+
+			$price = trim($price);
+			$price = substr($price, 1, strlen($price) - 1);
+			$priceFloat= floatVal($price);
+
+			array_push($orders, array($timeStamp, $account_email, $pickup, $vendor, $priceFloat, $remitRateFloat, $countInt));
+		}
+	}
+	return $orders;
+}
+
 function getOrderWithAccountAndDeadline($accountEmail, $deadline) {
 	global $GetOrder_URL ;
 	$orders = array();
@@ -68,44 +110,44 @@ function getOrderWithAccountAndDeadline($accountEmail, $deadline) {
 	return $orders;
 }
 
-function reportByVendorAndPrice( $deadline) {
-	$orders = getOrderWithAccountAndDeadline("", $deadline);
+function reportByVendorAndPrice( $orders) {
+	//$orders = getOrderWithAccountAndDeadline_old("", $deadline);
 	$orderGrp = array();
 	$vendorSummary = array();
+	//var_dump($orders);
 	foreach ($orders as $order) {
 		$vendorName = $order[3];
 		$count = $order[6];
 		$price = $order[4];
 		$priceStr= strval($price);
 		$subtotal= $price * $count;
+		//echo 'Price: '. $priceStr. " Count:". $count. ' <br>';
 		if(array_key_exists( $vendorName, $orderGrp)) {
 			$vendor = $orderGrp[$vendorName];
-
 			if(array_key_exists($priceStr, $vendor ) ) {
 				$vendorCard = $vendor[$priceStr];
-				$vendorCard[0] = $vendorCard[0] + $count;
-				$vendorCard[1] = $vendorCard[1] + $subtotal;
+				$orderGrp[$vendorName][$priceStr][0] = $vendorCard[0] + $count;
+				$orderGrp[$vendorName][$priceStr][1] = $vendorCard[1] + $subtotal;
 			} else {
-				array_push($vendor, $priceStr,  array($count, $subtotal));
+				$orderGrp[$vendorName][$priceStr] = array($count, $subtotal);
 			}
 		} else {
-			array_push($orderGrp, $vendorName, array($priceStr=> array($count, $subtotal)));
+			$orderGrp[$vendorName] = array($priceStr=> array($count, $subtotal));
 		}
 
 		if(array_key_exists($vendorName, $vendorSummary )){
-			$summary = $vendorSummary[$vendorName];
-			$vendorSummary[$vendorName] = $summary + $subtotal;
+			$summary = $vendorSummary[$vendorName] = $vendorSummary[$vendorName] + $subtotal;
 		} else {
-			array_push($vendorSummary, $vendorName, $subtotal);
+			$vendorSummary[$vendorName] = $subtotal;
 		}
 	}
 	return array($orderGrp, $vendorSummary);
 }
 
-function reportByPickupOptionAndAccount($accountEmail, $deadline) {
-	$orders = getOrderWithAccountAndDeadline($accountEmail, $deadline);
+function reportByPickupOptionAndAccount( $orders) {
 	$orderGrp = array();
 	$accountSummary = array();
+	//var_dump($orders);
 	foreach ($orders as $order) {
 		$pickupOption = $order[2];
 		$accountEmail = $order[1];
@@ -116,19 +158,20 @@ function reportByPickupOptionAndAccount($accountEmail, $deadline) {
 		$subtotal= $price * $count;
 		$remitTotal = $subtotal * $remitRate;
 		$pickupItem = array($order[3],$price, $count, $subtotal, $remitTotal);//vendor, price, count, subtotal, remit
+
 		if(array_key_exists($pickupOption, $orderGrp)) {
-			if(array_key_exists($orderGrp[$pickupOption], $accountEmail)){
+			if(array_key_exists($accountEmail, $orderGrp[$pickupOption] )){
 				array_push($orderGrp[$pickupOption][$accountEmail], $pickupItem);
 			} else {
-				array_push($orderGrp[$pickupOption], array($accountEmail => array($pickupItem)));
+				$orderGrp[$pickupOption][$accountEmail] = array($pickupItem);
 			}
 		}
 		else {
-			array_push($orderGrp, $pickupOption, array($accountEmail => array($pickupItem)));
+			$orderGrp[$pickupOption] = array($accountEmail => array($pickupItem));
 		}
 
-		if(array_key_exists($accountEmail, $accountSummary)){
-			array_push($accountSummary, array( $subtotal,$subtotal - $remitTotal, $remitTotal));
+		if(!array_key_exists($accountEmail, $accountSummary)){
+			$accountSummary[$accountEmail] = array( $subtotal,$subtotal - $remitTotal, $remitTotal);
 		} else {
 			$accountSummaryPerClient = $accountSummary[$accountEmail];
 			$accountSummaryPerClient[0] = $accountSummaryPerClient[0] + $subtotal;
@@ -202,100 +245,116 @@ function displayReportForPickup($data) {
 	orderSummary { AccountEmail : arrray(subtoal, totalDue, remitTotal)}
 		*/
 	setlocale(LC_MONETARY, 'en_CA');
-	$displayStr = '<table> ';
+	$displayStr = '<table style =" border-collapse: collapse"> ';
 	$pickupList = $data[0];
 	$accountSummary = $data[1];
 	foreach($pickupList as $pickup => $pickupAccounts) {
 		$displayStr .= '<tr>
-			<th  style="width: 100px; text-align: left;" collspan="6">pickupOption: '.$pickup.'</th></tr>';
-			$displayStr .='<tr><th  style="width: 100px; text-align: left;">Account</th>
-				<th  style="width: 200px; text-align: left;">Vendor</th>
-				<th  style="width: 100px; text-align: left;">Price</th>
-				<th  style="width: 100px; text-align: left;">Count</th>
-				<th  style="width: 100px; text-align: left;">Remit</th>
-				<th  style="width: 100px; text-align: left;">Total Due</th>
+			<th  style=" width: 600px; text-align: center;border: 1px solid black" colspan="6" >Pickup: '.$pickup.'</th>
+			</tr>';
+
+			$displayStr .='<tr><th  style="width: 100px; text-align: left;border: 1px solid black">Account</th>
+				<th  style="width: 250px; text-align: left;border: 1px solid black">Vendor</th>
+				<th  style="width: 100px; text-align: left;border: 1px solid black">Price</th>
+				<th  style="width: 50px; text-align: left;border: 1px solid black">Count</th>
+				<th  style="width: 100px; text-align: left;border: 1px solid black">Remit</th>
+				<th  style="width: 100px; text-align: left;border: 1px solid black">Total Due</th>
 			</tr>
 		';
 		foreach ($pickupAccounts as $accountEmail => $orders) {
 			foreach($orders as $orderItem) {
-				$displayStr .='<tr><td  style="width: 100px; text-align: left;">'.$accountEmail.'</th>
-					<td  style="width: 200px; text-align: left;">'.$orderItem[0].'</th>
-					<td  style="width: 100px; text-align: left;">'.money_format('%i',$orderItem[1]).'</th>
-					<td  style="width: 100px; text-align: left;">'.$orderItem[2].'</th>
-					<td  style="width: 100px; text-align: left;">'.money_format('%i',$orderItem[3]).'</th>
-					<td  style="width: 100px; text-align: left;">'.money_format('%i', $orderItem[4]).'</th>
+				$displayStr .='<tr><td  style="width: 100px; text-align: left;border: 1px solid black">'.$accountEmail.'</th>
+					<td  style="width: 200px; text-align: left;border: 1px solid black">'.$orderItem[0].'</th>
+					<td  style="width: 100px; text-align: left;border: 1px solid black">'.money_format('%i',$orderItem[1]).'</th>
+					<td  style="width: 100px; text-align: left;border: 1px solid black">'.$orderItem[2].'</th>
+					<td  style="width: 100px; text-align: left;border: 1px solid black">'.money_format('%i',$orderItem[3]).'</th>
+					<td  style="width: 100px; text-align: left;border: 1px solid black">'.money_format('%i', $orderItem[4]).'</th>
 				</tr>
 			';
 			}
 		}
+
 	}//for orderitems
 
 	$displayStr.='</td></table>';
 
-	$summaryDisplayStr ='<table><tr><th  style="width: 100px; text-align: left;">Account</th>
-			<th  style="width: 200px; text-align: left;">Total Value</th>
-			<th  style="width: 100px; text-align: left;">Remit</th>
-			<th  style="width: 100px; text-align: left;">Totoal Due</th>
+	$summaryDisplayStr ='<table style ="border-collapse: collapse">
+		<tr>
+			<th  style=" width: 400px; text-align: center;border: 1px solid black" colspan="4">Account Summary</th>
+		</tr>
+		';
+		$summaryDisplayStr .='
+		<tr>
+			<th  style="width: 150px; text-align: left;border: 1px solid black">Account</th>
+			<th  style="width: 80px; text-align: left;border: 1px solid black">Total Value</th>
+			<th  style="width: 80px; text-align: left;border: 1px solid black">Total Due</th>
+			<th  style="width: 120px; text-align: left;border: 1px solid black">Total Remit</th>
 		</tr>';
 	foreach ($accountSummary as $accountEmail => $summary) {
 		$summaryDisplayStr .='<tr>
- 				<th  style="width: 100px; text-align: left;">'.$accountEmail.'</th>
-				<th  style="width: 200px; text-align: left;">'. money_format('%i',$summary[0]) . '</th>
-				<th  style="width: 100px; text-align: left;">'. money_format('%i',$summary[1]) . '</th>
-				<th  style="width: 100px; text-align: left;">'. money_format('%i',$summary[2]) . '</th>
+ 				<td  style="width: 150px; text-align: left;border: 1px solid black">'.$accountEmail.'</th>
+				<td  style="width: 80px; text-align: left;border: 1px solid black">'. money_format('%i',$summary[0]) . '</th>
+				<td  style="width: 80px; text-align: left;border: 1px solid black">'. money_format('%i',$summary[1]) . '</th>
+				<td  style="width: 120px; text-align: left;border: 1px solid black">'. money_format('%i',$summary[2]) . '</th>
 			</tr>';
 	}
-	$summaryDisplayStr .= '</table>';
+	$summaryDisplayStr .= "</table>";
 
 	$returnStr = '<table><tr>';
-	$returnStr .= '<td>' .$displayStr.'</td>';
-	$returnStr .= '<td>' .$summaryDisplayStr.'</td>';
+	$returnStr .= '<td>' .$summaryDisplayStr.'</td></tr>';
+	$returnStr .= '<tr><td><br><br><br></td></tr>';
+	$returnStr .= '<tr><td>' .$displayStr.'</td></tr>';
+	$returnStr .= '<tr><td><br>=== End of the report ===</td></tr></table>';
 
-	$returnStr .= '</tr></table';
 	return $returnStr;
 }
-function displayReportForPurchase($deadline) {
-	$data = reportByVendorAndPrice($deadline);
+
+
+function displayReportForPurchase($data) {
 	$orderSummary = $data[0];
 	$vendorSummary = $data[1];
 	setlocale(LC_MONETARY, 'en_CA');
-	$orderSummaryStr = '<table>';
+	$orderSummaryStr = '<table style ="border-collapse: collapse">';
 	foreach($orderSummary as $vendorName => $orders) {
-		$orderSummaryStr .='<tr><th  style="width: 100px; text-align: left;">'. $vendorName.'</th></tr>
+		$orderSummaryStr .='<tr>
+			<th  style="width: 150px; text-align: center;border: 1px solid black" colspan="3">'. $vendorName.'</th>
+		</tr>
 			<tr>
-				<th  style="width: 50px; text-align: left;">Price</th>
-				<th  style="width: 50px; text-align: left;">Count</th>
-				<th  style="width: 50px; text-align: left;">Total</th>
+				<th  style="width: 50px; text-align: left;border: 1px solid black">Price</th>
+				<th  style="width: 50px; text-align: left;border: 1px solid black">Count</th>
+				<th  style="width: 50px; text-align: left;border: 1px solid black">Total</th>
 			</tr>
 			';
-		foreach($orders as $orderItem) {
+		foreach($orders as $priceTag => $orderItem) {
 			$orderSummaryStr .='<tr>
-				<td  style="width: 200px; text-align: left;">'.money_format('%i',$orderItem[0]).'</th>
-				<td  style="width: 100px; text-align: left;">'.$orderItem[1].'</th>
-				<td  style="width: 100px; text-align: left;">'.money_format('%i',$orderItem[2]).'</th>
+				<td  style="width: 200px; text-align: left;border: 1px solid black">'.$priceTag.'</th>
+				<td  style="width: 100px; text-align: left;border: 1px solid black">'.$orderItem[0].'</th>
+				<td  style="width: 100px; text-align: left;border: 1px solid black">'.money_format('%i',$orderItem[1]).'</th>
 			</tr>
 			';
 		}
 	}
 	$orderSummaryStr .='</table>';
 
-	$vendorSummaryStr = '<table><tr>
-			<th  style=" text-align: left;">Vendor</th>
-			<th  style="width: 50px; text-align: left;">Price</th>
+	$vendorSummaryStr = '<table  style ="border-collapse: collapse">
+			<tr>
+			<th  style=" text-align: left;border: 1px solid black">Vendor</th>
+			<th  style="width: 50px; text-align: left;border: 1px solid black">Price</th>
 			</tr>';
 	foreach($vendorSummary as $vendorName => $total) {
 		$vendorSummaryStr .= '<tr>
-				<th  style=" text-align: left;">'.$vendorName.'</th>
-				<th  style="width: 50px; text-align: left;">'.money_format('%i',$total).'</th>
+				<td  style=" text-align: left;border: 1px solid black">'.$vendorName.'</th>
+				<td  style="width: 50px; text-align: left;border: 1px solid black">'.money_format('%i',$total).'</th>
 			</tr>';
 	}
 	$vendorSummaryStr .= '</table>';
 
 	$returnStr = '<table><tr>';
-	$returnStr .= '<td>' .$orderSummaryStr.'</td>';
-	$returnStr .= '<td>' .$vendorSummaryStr.'</td>';
-
-	$returnStr .= '</tr></table';
+	$returnStr .= '<td>' .$orderSummaryStr.'</td></tr>';
+	$returnStr .= '<tr><td><br><br><br></td></tr>';
+	$returnStr .= '<tr><td >' .$vendorSummaryStr.'</td></tr>';
+	$returnStr .= '<tr><td>=== End of report ===</td></tr>';
+	$returnStr .= '</table>';
 	return $returnStr;
 }
 ?>

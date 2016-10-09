@@ -1,6 +1,8 @@
 <?php
 require "giftcards_common.php";
-
+if(isset($_SESSION['AccountEmail'])) {
+	echo "from session variable: " .$_SESSION['AccountEmail'] .'<br>';
+}
 $inventory = array("categories"=>array( ), "vendors"=>array());
 
 $AccountEmail = "";
@@ -28,35 +30,6 @@ $Order_Deadline_Display = "";
 $Current_Time_Display = "";
 $System_Enabled = false;
 $Error_Message = "";
-/*
-	get template data for general instruction, deadline and pickup, etc
-function getTemplateInfo() {
-	global $Special_Messages, $PickupOptions, $Order_Deadline;
-	global $Spreadsheet_ID;
-	$template_url= "https://spreadsheets.google.com/feeds/list/".$Spreadsheet_ID."/1/public/values?alt=json";
-
-	$json = file_get_contents($template_url);
-	$data = json_decode($json, TRUE);
-	$rows = $data['feed']['entry'];
-	foreach ($rows as $item) {
-		$opt = $item['gsx$pickups']['$t'];
-		$opt = trim($opt);
-		if (strlen($opt) > 0) {
-				array_push($PickupOptions, $opt);
-		}
-		$nextOrderData = trim($item['gsx$nextorderdate']['$t']);
-		if (strlen($nextOrderData) >0) {
-				$Order_Deadline = $nextOrderData;
-		}
-
-		$msg = trim($item['gsx$specialmessages']['$t']);
-		if (strlen($msg)) {
-			$Special_Messages = $msg;
-		}
-	}
-}
-
-*/
 /*
 	build up  inventory data
 */
@@ -279,7 +252,7 @@ if($VisibleCtl) {
 		vendorCtl.selectedIndex = 0;
 
 		//for display
-		var val = vendorName.concat(vendorName,'  ', price, ' * ', count, '   Remit $', RemitVal, '   subtotal $', SubTotal );
+		var val = vendorName.concat('  ', price, ' * ', count, ' |   Remit $', RemitVal, '   subtotal $', SubTotal );
 		//display data
 		var table = document.getElementById('orderList');
 
@@ -347,11 +320,12 @@ if($VisibleCtl) {
 </title>
 </head>
 <body>
+<form method="post" action="process_order.php"  onsubmit="return validateForm()">
 	<!--message area-->
 <table>
 	<tr>
 		<td><image src="sksc.jpg" height="128" width="128"/></td>
-		<td>
+		<td valign="top">
 			<table>
 				<tr><!--for Special Message-->
 					<td>
@@ -367,43 +341,40 @@ if($VisibleCtl) {
 						</p>
 					</td>
 				</tr>
-				<tr><!--For intruction-->
-					<td><p id="instruction_msg" class="info_msg">
-						If it is your 1st time to place order, please click <a href="https://www.teamunify.com/cansksc/UserFiles/File/Fundraising/2015-16/INSTRUCTIONSTOUSETHEGIFTCARDONLINEORDERINGSYSTEM.pdf">here</a> for instructions.</p></td>
-				</tr>
 				<tr><!--For Error message-->
 					<td><p id="error_msg" class="error_msg"></p></td>
+				</tr>
+				<tr>
+					<td>
+						<table width="100%">
+							<tr>
+								<td width="40%">
+									<input type ="hidden" name="Order_Deadline" value ="<?php echo $Order_Deadline?>" />
+									<input type ="hidden" name="AccountEmail" value ="<?php echo $AccountEmail?>" />
+									Account Email: <?php echo $AccountEmail?>
+								</td>
+								<td width="60%">Pickup date/time:
+									<select id="PickupOptions" name="pickupOption" onchange="OnSelectPickupOption(this.options[this.selectedIndex].value)">
+										<option value="disabled">==Select Pickup Option==</option>
+										<?php
+											foreach($PickupOptions as $option) {
+												echo '<option value="'. $option . '">'. $option .'</option>';
+											}
+										?>
+									</select>
+								</td>
+							</tr>
+						</table>
+					</td>
 				</tr>
 			</table>
 		</td>
 	</tr>
 </table>
-
-<hr />
-<form method="post" action="process_order.php"  onsubmit="return validateForm()">
-	<table width="100%">
-		<tr>
-			<td width="40%">
-				<input type ="hidden" name="Order_Deadline" value ="<?php echo $Order_Deadline?>" />
-				<input type ="hidden" name="AccountEmail" value ="<?php echo $AccountEmail?>" />
-				Account Email: <?php echo $AccountEmail?>
-			</td>
-			<td width="60%">Pickup date/time:
-				<select id="PickupOptions" name="pickupOption" onchange="OnSelectPickupOption(this.options[this.selectedIndex].value)">
-					<option value="disabled">==Select Pickup Option==</option>
-					<?php
-						foreach($PickupOptions as $option) {
-							echo '<option value="'. $option . '">'. $option .'</option>';
-						}
-					?>
-				</select>
-			</td>
-		</tr>
-	</table>
 	<hr>
 	<table width="100%">
 		<tr>
-			<th colspan="6" style="text-align: left;">Please Choose and Add Order. You can reference to inventories to see what are available</th>
+			<th colspan="6" style="text-align: center;">Please Choose and Add Order. You can reference to inventories to see what are available</th>
 		</tr>
 		<tr >
 			<th style="text-align: left;">Category</th>
@@ -439,17 +410,15 @@ if($VisibleCtl) {
 			</td>
 			<td style="width: 100px;">
 				<input type="text" id="vendor_subtotal" disabled="true" style="width: 50px;"/>
-
 			</td><!--Subtotal-->
 			<td style="width: 150px;">
 				<input onclick="addSelectedToOrder()" style="background: RGB(255,255,128);" type="button" value="Add To Order" />
 			</td>
 		</tr>
 		<tr>
-			<td colspan="6">
-				<br>
-				<h2>Your Order:</h2>
-			</td>
+			<th colspan="6">
+				Your Order:
+			</th>
 		</tr>
 		<tr>
 			<td colspan="6">

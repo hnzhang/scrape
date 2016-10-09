@@ -75,7 +75,7 @@ function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $ema
 
 	$headers = "From: giftcards@surreyknights.net\r\n";
 	$headers .= "Reply-To: giftcards@surreyknights.net\r\n";
-	//$headers .= "CC: fundraising@surreyknights.com\r\nVersion: 1.0\r\n";
+	$headers .= "CC: fundraising@surreyknights.com\r\nVersion: 1.0\r\n";
 	$headers .= "CC: giftcards@surreyknights.com\r\nVersion: 1.0\r\n";
 	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
 
