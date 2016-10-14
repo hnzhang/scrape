@@ -1,4 +1,9 @@
 <?php
+date_default_timezone_set('Canada/Vancouver');
+
+/** Include PHPExcel */
+require_once dirname(__FILE__) . '/../Classes/PHPExcel.php';
+
 //retrieve pickip options, order deadline and Special_Messages
 $Spreadsheet_ID = "1VTseFM0BM-x-haK_We9vsd0sWAYrC7gkGU1mSWsOxBg";//new id
 //$Spreadsheet_ID = '1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y';
@@ -229,11 +234,94 @@ function displayReportForAccount($data){
 		$displayStr .= "<td> TotalValue: ".money_format('%i', $subtotal)."</td>";
 		$displayStr .= "<td> Total Remit: ".money_format('%i', $totalremit)."</td>";
 		$displayStr .= "<td></td>";
-		$displayStr .= "<td> Total Due: ". money_format('%i', $subtotal - $totalremit) ."</td>";
+		//$displayStr .= "<td> Total Due: ". money_format('%i', $subtotal - $totalremit) ."</td>";
+		$displayStr .= "<td> </td>";
 	$displayStr .= "</tr>";
 	$displayStr .= '</table>';
 
 	return $displayStr;
+}
+
+function exportExcelReportForPickup($data, $xlsFileName) {
+	date_default_timezone_set('Canada/Vancouver');
+	$pickupList = $data[0];
+	$accountSummary = $data[1];
+	$objPHPExcel = new PHPExcel();
+	$objPHPExcel->getProperties()->setCreator("SKSC Fundraising")
+							 ->setLastModifiedBy("SKSC Fundraising")
+							 ->setTitle("Pickup and Account Report")
+							 ->setSubject("Pickup and Account")
+							 ->setDescription("This is report for Pickup and Account.")
+							 ->setKeywords("Pickup Account Fundraising SKSC")
+							 ->setCategory("SKSC Fundraising");
+
+	$activeSheet = $objPHPExcel->setActiveSheetIndex(0);
+	$activeSheet->setCellValue('A1', 'Pickup')
+							->setCellValue('B1', 'Account')
+							->setCellValue('C1', 'Vendor')
+							->setCellValue('D1', 'Price')
+							->setCellValue('E1', 'Count')
+							->setCellValue('F1', 'Remit')
+							->setCellValue('G1', 'Total Due');
+
+		$rowId = 2;
+	foreach($pickupList as $pickup => $pickupAccounts) {
+		foreach ($pickupAccounts as $accountEmail => $orders) {
+			foreach($orders as $orderItem) {
+				$activeSheet->setCellValue('A'.$rowId, $pickup)
+										->setCellValue('B'.$rowId, $accountEmail)
+										->setCellValue('C'.$rowId, $orderItem[0])
+										->setCellValue('D'.$rowId, strval($orderItem[1]))
+										->setCellValue('E'.$rowId, $orderItem[2])
+										->setCellValue('F'.$rowId, strval($orderItem[3]))
+										->setCellValue('G'.$rowId, strval($orderItem[4]));
+				$rowId = $rowId +1;
+			}
+		}
+	}
+
+
+	$activeSheet->getStyle('D1:D'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+	$activeSheet->getStyle('F1:F'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+	$activeSheet->getStyle('G1:G'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+
+
+
+	$activeSheet->setCellValue('I1', 'Account')
+							->setCellValue('J1', 'Total Value')
+							->setCellValue('K1', 'Total Due')
+							->setCellValue('L1', 'Total Remit');
+
+	$rowId = 2;
+	foreach ($accountSummary as $accountEmail => $summary) {
+		$activeSheet->setCellValue('I'.$rowId, $accountEmail)
+								->setCellValue('J'.$rowId, strval($summary[0]))
+								->setCellValue('K'.$rowId, strval($summary[1]))
+								->setCellValue('L'.$rowId, strval($summary[2]));
+		$rowId = $rowId +1;
+	}
+
+	$activeSheet->getStyle('J1:J'.$rowId)
+		->getNumberFormat()
+		->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+	$activeSheet->getStyle('K1:K'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+	$activeSheet->getStyle('L1:L'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+
+	//save to local
+	$xlsFilePath = dirname(__FILE__) . '/' . $xlsFileName;
+	$objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+	$objWriter->save($xlsFilePath);
+	return $xlsFilePath;
 }
 
 function displayReportForPickup($data) {
@@ -356,5 +444,51 @@ function displayReportForPurchase($data) {
 	$returnStr .= '<tr><td>=== End of report ===</td></tr>';
 	$returnStr .= '</table>';
 	return $returnStr;
+}
+
+function exportExcelReportForPurchase($data, $xlsFileName) {
+	$objPHPExcel = new PHPExcel();
+	$objPHPExcel->getProperties()->setCreator("SKSC Fundraising")
+							 ->setLastModifiedBy("SKSC Fundraising")
+							 ->setTitle("Vendor and Pricing Report")
+							 ->setSubject("Vendor and Pricing")
+							 ->setDescription("This is report for Vendor and Pricing.")
+							 ->setKeywords("Vendor and Pricing Fundraising SKSC")
+							 ->setCategory("SKSC Fundraising");
+
+	$activeSheet = $objPHPExcel->setActiveSheetIndex(0);
+	$rowId = 1;
+	$orderSummary = $data[0];
+	$vendorSummary = $data[1];
+	foreach($orderSummary as $vendorName => $orders) {
+		$activeSheet->setCellValue('A'.$rowId, $VendorName);//TODO: set format to bold
+		$rowId = $rowId + 1;
+		$activeSheet->setCellValue('A'.$rowId, 'price');
+		$activeSheet->setCellValue('B'.$rowId, 'Count');
+		$activeSheet->setCellValue('C'.$rowId, 'Total');
+		$rowId = $rowId + 1;
+		foreach($orders as $priceTag => $orderItem) {
+			$activeSheet->setCellValue('A'.$rowId, $priceTag);
+			$activeSheet->setCellValue('B'.$rowId, $orderItem[0]);
+			$activeSheet->setCellValue('C'.$rowId, money_format('%i',$orderItem[1]));
+			$rowId = $rowId + 1;
+		}
+	}
+
+	$rowId = 1;
+	$activeSheet->setCellValue('F'.$rowId, 'Vendor');
+	$activeSheet->setCellValue('G'.$rowId, 'Price');
+	$rowId = $rowId + 1;
+	foreach($vendorSummary as $vendorName => $total) {
+		$activeSheet->setCellValue('F'.$rowId, $vendorName);
+		$activeSheet->setCellValue('G'.$rowId, money_format('%i',$total));
+		$rowId = $rowId + 1;
+	}
+
+	//save to local
+	$xlsFilePath = dirname(__FILE__) . '/' . $xlsFileName;
+	$objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+	$objWriter->save($xlsFilePath);
+	return $xlsFilePath;
 }
 ?>

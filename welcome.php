@@ -3,6 +3,8 @@
 require "giftcards_common.php";
 
 $accountKey = 'shannon';
+$accountKey2 = 'report';
+
 if( array_key_exists($accountKey,$_REQUEST)) {
 	$val = trim($_REQUEST[$accountKey]);
 	if($val === $Spreadsheet_ID){
@@ -26,7 +28,7 @@ if( array_key_exists($accountKey,$_REQUEST)) {
 
 		 '';
 		$today = time();
-		if($today < $deadline_date)
+		if($today < $deadline_date || array_key_exists($accountKey2,$_REQUEST))
 		{
 			$displayStr .= '
 				<tr>

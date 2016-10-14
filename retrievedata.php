@@ -5,7 +5,7 @@ $accountEmail = $_REQUEST["Account"];
 
 $date = $_REQUEST["Date"];
 if($type === '1') {//per user
-	$orders = getOrderWithAccountAndDeadline_old($accountEmail, $date);
+	$orders = getOrderWithAccountAndDeadline($accountEmail, $date);
 	echo displayReportForAccount($orders);
 } else if( $type === '2') {// pickup and deadline
 	echo "<h2>Report for pickup with deadline ".$date."</h2>";

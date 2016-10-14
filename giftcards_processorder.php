@@ -17,8 +17,10 @@ function validateOrderDetails($order_details) {
 	global $orderTotal;
 
 	foreach ($order_details as $vendor=> $order_per_price) {
+		echo "<h1>".$vendor."</h1";
 		$orderOfVendor = array();
 		foreach($order_per_price as $price => $details){
+			echo "<h1>".$price."</h1";
 			$orderPerPrice = array();
 			foreach($details as $key =>$val) {
 				$orderPerPrice[$key] = $val;
@@ -126,7 +128,6 @@ if(!empty($_POST)) {
 
 		if(!is_null($order_details) ){
 			if(validateOrderDetails($order_details)){
-
 				$orders_to_post = array(
 					'Order_Deadline' => $order_Deadline,
 					'Account' => $accountEmail,

@@ -3,9 +3,12 @@
 require "giftcards_common.php";
 
 $accountKey = 'SuperEmail';
+$deadlineKey = 'Deadline';
 if( array_key_exists($accountKey,$_REQUEST)) {
 	$val = trim($_REQUEST[$accountKey]);
-	if(isSuperEmail($val)){
+	$deadline = trim($_REQUEST[$deadlineKey]);
+
+	if(isSuperEmail($val) && strlen($deadline) > 0){
 		$displayStr = '
 		<html>
 		<head>
@@ -33,12 +36,16 @@ if( array_key_exists($accountKey,$_REQUEST)) {
 				</tr>
 				<tr>
 					<td>
-						<input type="text" name="deadline" id="deadline">
-						<input type="hidden" name="superEmail" value=""/>
+						<input type="text" name="deadline" id="deadline" value="'.$deadline.'">
+						<input type="hidden" name="superEmail" value="'.$val.'"/>
 						<input type="submit" id="go" value="Go" />
 					</td>
 					</form>
 				</tr>
+				<tr>
+					<td>Tip: for accuracy, please copy & paste deadline from Template spreadsheet.
+					</td>
+					</tr>
 			</table>
 		</body>
 		</html>

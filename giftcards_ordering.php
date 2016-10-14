@@ -103,7 +103,7 @@ if($VisibleCtl) {
 //id, category, Vender, Type, Raw, Remit, First, Second, Third, forth
 
 	var inventories = <?php echo json_encode( $inventory ) ?>;
-
+	document.onkeypress = stopReloadKey; // prevent enter key to submit form
 	function formatMoneyToCAD( amount ) {
 		return amount.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' });
 	}
@@ -200,9 +200,9 @@ if($VisibleCtl) {
 		}
 
 		var totalCostCtl = document.getElementById("order_total_cost");
-		totalCostCtl.innerHTML = "Total: $" + formatMoneyToCAD(OrderTotal);
+		totalCostCtl.innerHTML = "Total: " + formatMoneyToCAD(OrderTotal);
 		var totalRemitCtl = document.getElementById("order_total_remit");
-		totalRemitCtl.innerHTML = "Total Remit: $" + formatMoneyToCAD(OrderRemitTotal);
+		totalRemitCtl.innerHTML = "Total Remit: " + formatMoneyToCAD(OrderRemitTotal);
 
 		document.getElementById("OrderTotal").value = OrderTotal;
 		document.getElementById("OrderRemitTotal").value = OrderRemitTotal;
@@ -242,7 +242,7 @@ if($VisibleCtl) {
 		} else {
 			order[vendorName][price].Remit = remitRate;
 			order[vendorName][price].Count = count;
-			order[vendorName][price].RemitVal = RemitVale;
+			order[vendorName][price].RemitVal = RemitVal;
 			order[vendorName][price].SubTotal = Subtotal;
 		}
 
@@ -255,14 +255,16 @@ if($VisibleCtl) {
 		var val = vendorName.concat('  ', price, ' * ', count, ' |   Remit $', RemitVal, '   subtotal $', SubTotal );
 		//display data
 		var table = document.getElementById('orderList');
+		var row = table.insertRow(0);
+		var cellOrderDetails = row.insertCell(0);
+		var cellRemoveButton = row.insertCell(1);
+		cellOrderDetails.innerHTML = val;
+		var btnId = vendorName.concat("<|>", price);
+		var innerHTML = '<input type="button" value="Remove" id="' + btnId + '" onclick="removeOrderDetails(this)">';
+		console.log(innerHTML);
 
-		var listItem = document.createElement("li");
-		//create new text node
-		var textNode = document.createTextNode(val);
-		//add text node to li element
-		listItem.appendChild(textNode);
-		//add new list element built in previous steps to unordered list
-		table.appendChild(listItem);
+		cellRemoveButton.innerHTML = innerHTML;
+
 		//update Total and Total Remit;
 		UpdateTotalAndTotalRemitDisplay();
 
@@ -270,6 +272,39 @@ if($VisibleCtl) {
 		displayErrorMsg("");
 	}
 
+function removeOrderDetails(btn) {
+	//order[vendorName][price]
+	//find entity price and remove it
+	//if vendorName entity has no child, remove it either
+	var attStr = btn.getAttribute('id');
+	var res = attStr.split('<|>');
+	if(res.length != 2){
+		displayErrorMsg("Data Error#1: " + attStr  );
+		return;
+	}
+	var vendorName = res[0];
+	var priceTag = res[1];
+
+	if(!(vendorName in order)){
+		displayErrorMsg("Try to delete order with vendor. However, data error happens! vendor Name:" + vendorName  );
+		return;
+	}
+	if(!(priceTag in order[vendorName])) {
+		displayErrorMsg("Try to delete order details with vendor and card price. However, data error happens! PriceTag:" + priceTag  );
+		return;
+	}
+
+	delete order[vendorName][priceTag];
+	if(Object.keys(order[vendorName]).length === 0) {
+		delete order[vendorName];
+	}
+
+	var row = btn.parentNode.parentNode;
+	row.parentNode.removeChild(row);
+
+	UpdateTotalAndTotalRemitDisplay();
+	displayErrorMsg("");
+}
 	function displayErrorMsg(msg) {
 		var  errorMsgCtl = document.getElementById("error_msg");
 		errorMsgCtl.innerHTML = msg;
@@ -297,6 +332,15 @@ if($VisibleCtl) {
 
 		document.getElementById("order_details").value = JSON.stringify(order);
 	}
+
+	function stopReloadKey(evt) {
+      var evt = (evt) ? evt : ((event) ? event : null);
+      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+      if (evt.keyCode == 13)  {
+          return false;
+      }
+}
+
 </script>
 
 <style type="text/css">
@@ -416,13 +460,16 @@ if($VisibleCtl) {
 			</td>
 		</tr>
 		<tr>
-			<th colspan="6">
-				Your Order:
-			</th>
+			<th colspan="6">Your Order:</th>
 		</tr>
 		<tr>
 			<td colspan="6">
-				<ul id="orderList"></ul>
+				<table id="orderList">
+					<tr>
+							<td style="text-align: center;width: 300px;"><p id="order_total_cost"></p></td>
+							<td colspan="2"  style="text-align: center;width: 300px;"><p id="order_total_remit" ></p> </td>
+					</tr>
+				</table>
 			</td>
 		</tr>
 		<tr>
