@@ -32,7 +32,7 @@ if( array_key_exists($accountKey,$_REQUEST)) {
 		{
 			$displayStr .= '
 				<tr>
-					<td>Enter Your SKSC Account Email</td>
+					<td><h1>Gift Card Order Form</h1>Enter Your SKSC Account Email</td>
 				</tr>
 				<tr>
 					<form method="post" action="welcome_validate.php" autocomplete="on">
