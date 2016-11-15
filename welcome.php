@@ -26,9 +26,11 @@ if( array_key_exists($accountKey,$_REQUEST)) {
 		$Order_Deadline = $packagedData[2];
 		$deadline_date = strtotime($Order_Deadline);
 
-		 '';
 		$today = time();
-		if($today < $deadline_date || array_key_exists($accountKey2,$_REQUEST))
+		$deadline_str = date("Y-m-d", $deadline_date);
+		$today_str =  date("Y-m-d", $today);
+		
+		if($today_str < $deadline_str || array_key_exists($accountKey2,$_REQUEST))
 		{
 			$displayStr .= '
 				<tr>

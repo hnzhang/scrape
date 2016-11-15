@@ -80,10 +80,14 @@ if($VisibleCtl) {
 	$deadline_date = strtotime($Order_Deadline);
 
 	$Order_Deadline_Display = date("M/d/Y",$deadline_date);
+
 	$Current_Time_Display = getCurrentDateTime();
+
 	$today = time();
-	if($today < $deadline_date)
-	{
+	$deadline_str = date("Y-m-d", $deadline_date);
+	$today_str =  date("Y-m-d", $today);
+	
+	if($today_str < $deadline_str){
 		$System_Enabled = true;
 		getInventoryInfo();
 	} else {

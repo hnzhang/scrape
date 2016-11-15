@@ -1,7 +1,8 @@
-<?php
+5<?php
 
 function postOrderWithCurl( $order_details){
-	$post_url = 'https://script.google.com/macros/s/AKfycbzYcZMNXvNuP7pR1yNyLugz-qby4RWWumbdmJbz3J4F5Pu3SBU6/exec';
+	//$post_url = "https://script.google.com/macros/s/AKfycbyFuHnEvzt3XTNc9Sy8R5KZldFVLU75jD1tDvL6l5ck6kJ6nS8Z/exec";//for SKSC
+	$post_url = 'https://script.google.com/macros/s/AKfycbzYcZMNXvNuP7pR1yNyLugz-qby4RWWumbdmJbz3J4F5Pu3SBU6/exec';// for test
 	//url-ify the data for the POST
 	foreach($order_details as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
 	rtrim($fields_string, '&');
@@ -57,7 +58,7 @@ function sendEmailNotification($emailAddress,$orderDeadline,$picupOption, $order
 		echo  "<br>You should received an email about your oder details soon<br>";
 	}
 }
-$AccountEmail = 'hnzhang@ea.com';
+$AccountEmail = 'hnzhang@gmail.com';
 $PickupOption = "Friday 4:00--6:00 Guildford";
 $Order_Deadline = '2016/09/21';
 
@@ -80,7 +81,13 @@ $fields = array(
 'Order' =>json_encode($orders)
 );
 
+function validateOrder()
+{
+
+}
+/*
 if(postOrderWithCurl($fields)){
 	sendEmailNotification($AccountEmail,$Order_Deadline,$PickupOption, $orders);
 }
+*/
 ?>
