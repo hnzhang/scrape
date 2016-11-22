@@ -70,10 +70,35 @@ function postOrderWithCurl( $order_details){
 	return $success;
 }
 
-function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $email_body) {
+function sendEmailNotificationBeforeSubmit($emailAddress, $orderDeadline, $pickupOption, $email_body, $stageInfo) {
+	//global $orderDetailsInHTML;
+	$to = strip_tags("giftcards@surreyknights.net");
+	$subject = 'GiftCard Order--Debug Logging; Pickup at ['.$pickupOption ."]";
+
+	$headers = "From: giftcards@surreyknights.net\r\n";
+	$headers .= "Reply-To: giftcards@surreyknights.net\r\n";
+	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+
+	$message .= $email_body;
+
+	$message .= "<p>If you CANNOT see order details here or have WRONG order details, Please notify fundraising@surreynights.com </p>";
+	$message .= "<p>Email ID:".$emailAddress." </p>";
+	$message .= "<p>Order Stage Info:".$stageInfo." </p>";
+	$message .= "<p> Ususally Order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
+	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
+	$message .= "<p> You make payment of the order onsite of pickup.</p> ";
+
+	if(mail($to, $subject, $message, $headers) === true) {
+		echo  "<br>Logging...<br>";
+	}
+}
+
+
+
+function sendEmailNotification($emailAddress, $orderDeadline, $pickupOption, $email_body) {
 	//global $orderDetailsInHTML;
 	$to = strip_tags($emailAddress);
-	$subject = 'GiftCard Order; Pickup at ['.$picupOption ."]";
+	$subject = 'GiftCard Order; Pickup at ['.$pickupOption ."]";
 
 	$headers = "From: giftcards@surreyknights.net\r\n";
 	$headers .= "Reply-To: giftcards@surreyknights.net\r\n";
@@ -83,6 +108,8 @@ function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $ema
 
 	$message .= $email_body;
 
+	$message .= "<p>If you CANNOT see order details here or have WRONG order details, Please notify fundraising@surreynights.com </p>";
+	$message .= "<p> </p>";
 	$message .= "<p> Ususally Order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
 	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
 	$message .= "<p> You make payment of the order onsite of pickup.</p> ";
@@ -125,6 +152,7 @@ if(!empty($_POST)) {
 		echo "<h2>AccountEmail:".$accountEmail.'</h2>';
 		echo "<h2>PickupOptions:".$pickupOption.'</h2>';
 		$order_details = json_decode($_POST["order_details"], true);
+		sendEmailNotificationBeforeSubmit($accountEmail, $order_Deadline,  $pickupOption, $order_details,"Stage:OrderDetailsFrom _POST");
 
 		if(!is_null($order_details) ){
 			if(validateOrderDetails($order_details)){
@@ -134,6 +162,9 @@ if(!empty($_POST)) {
 					'Pickup' => $pickupOption,
 					'Order' =>json_encode($order_entries)
 					);
+
+				sendEmailNotificationBeforeSubmit($accountEmail, $order_Deadline,  $pickupOption, $order_to_post,"Stage:OrderDetails_readyForPost");
+
 				if(postOrderWithCurl($orders_to_post)){
 					$orders = getOrderWithAccountAndDeadline($accountEmail, $order_Deadline);
 					$displayStr = displayReportForAccount($orders);

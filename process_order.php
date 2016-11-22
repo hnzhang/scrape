@@ -9,6 +9,17 @@ $PickupOption = "";
 $orderRemitTotal = "";
 $orderTotal = "";
 
+function writeOrderToLog($emailAddress, $orderDeadline, $orderData) {
+	$folder = "order_log_". str_replace('/', '_', $orderDeadline);
+	if(!file_exists($folder)){
+		mkdir($folder);
+	}
+	$file = $folder .'/'. str_replace("@", '-', $emailAddress);
+	file_put_contents($file, $emailAddress."\r\n");
+	file_put_contents($file, $orderData, FILE_APPEND |LOCK_EX);
+	echo '<br>Logging<br>';
+}
+
 function validateOrderDetails($order_details) {
 	global $Order_Deadline, $AccountEmail, $PickupOption;
 	global $order_entries;
@@ -16,19 +27,31 @@ function validateOrderDetails($order_details) {
 	global $orderRemitTotal;
 	global $orderTotal;
 
+	$fileContent = '';
+
 	foreach ($order_details as $vendor=> $order_per_price) {
+		$fileContent .= "Vendor:".$vendor ."\r\n";
 		$orderOfVendor = array();
 		foreach($order_per_price as $price => $details){
+			$fileContent .= "Card:".$price."\r\n";
 			$orderPerPrice = array();
 			foreach($details as $key =>$val) {
 				$orderPerPrice[$key] = $val;
+				$fileContent .= ' '. $key .':'.$val;
 			}
 			$orderPerPrice["Recurring"] = 'no';
 			$orderPerPrice["Active"] = 'yes';
 			$orderOfVendor[$price] = $orderPerPrice;
+			$fileContent .= "\r\n";
+
 		}
 		$order_entries[$vendor] = $orderOfVendor;
 	}
+	$fileContent .= "\r\n";
+	$fileContent .= 'Order deadline:' . $Order_Deadline ."\r\n";
+	$fileContent .= 'Pickup: ' . $PickupOption . "\r\n";
+	$fileContent .= "AccountEmail: ". $AccountEmail;
+	writeOrderToLog($AccountEmail, $Order_Deadline, $fileContent);
 	return true;
 }
 
@@ -68,10 +91,38 @@ function postOrderWithCurl( $order_details){
 	return $success;
 }
 
-function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $email_body) {
+function sendEmailNotificationBeforeSubmit($emailAddress, $logEmail, $orderDeadline, $pickupOption, $email_body, $stageInfo) {
+	//global $orderDetailsInHTML;
+	$to = strip_tags($logEmail);
+	$subject = 'GiftCard Order--Debug Logging; Pickup at ['.$pickupOption ."]";
+
+	$headers = "From: giftcards@surreyknights.net\r\n";
+	$headers .= "Reply-To: giftcards@surreyknights.net\r\n";
+	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+
+	$message .= "<p>Order Summary</p>";
+	$message .= $email_body;
+
+	$message .= "<p>This should cover all you have ordered in this Fundraising run </p>";
+	$message .= "<p></p>";
+	$message .= "<p>If you CANNOT see order details here or have WRONG order details, Please notify fundraising@surreynights.com </p>";
+	$message .= "<p>Email ID:".$emailAddress." </p>";
+	$message .= "<p>Order Stage Info:".$stageInfo." </p>";
+	$message .= "<p> Ususally Order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
+	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
+	$message .= "<p> You make payment of the order onsite of pickup.</p> ";
+
+	if(mail($to, $subject, $message, $headers) === true) {
+		echo  "<br>Logging...<br>";
+	}
+}
+
+
+
+function sendEmailNotification($emailAddress, $orderDeadline, $pickupOption, $email_body) {
 	//global $orderDetailsInHTML;
 	$to = strip_tags($emailAddress);
-	$subject = 'GiftCard Order; Pickup at ['.$picupOption ."]";
+	$subject = 'GiftCard Order; Pickup at ['.$pickupOption ."]";
 
 	$headers = "From: giftcards@surreyknights.net\r\n";
 	$headers .= "Reply-To: giftcards@surreyknights.net\r\n";
@@ -81,12 +132,14 @@ function sendEmailNotification($emailAddress, $orderDeadline, $picupOption, $ema
 
 	$message .= $email_body;
 
+	$message .= "<p>If you CANNOT see order details here or have WRONG order details, Please notify fundraising@surreynights.com </p>";
+	$message .= "<p> </p>";
 	$message .= "<p> Ususally order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
 	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
 	$message .= "<p> You make payment of the order onsite of pickup.</p> ";
 
 	if(mail($to, $subject, $message, $headers) === true) {
-		echo  "<br>You should received an email about your oder details soon<br>";
+		echo  "<br>You should received an email about your order details soon<br>";
 	}
 }
 
@@ -118,6 +171,10 @@ if(!empty($_POST)) {
 		$orderRemitTotal = $_POST['OrderRemitTotal'];
 		$orderTotal = $_POST['OrderTotal'];
 
+		$Order_Deadline = $order_Deadline;
+		$AccountEmail = $accountEmail;
+		$PickupOption = $pickupOption;
+
 
 		echo "<h2>Order_Deadline:".$order_Deadline.'</h2>';
 		echo "<h2>AccountEmail:".$accountEmail.'</h2>';
@@ -133,12 +190,14 @@ if(!empty($_POST)) {
 					'Pickup' => $pickupOption,
 					'Order' =>json_encode($order_entries)
 					);
+				
 				if(postOrderWithCurl($orders_to_post)){
 					$orders = getOrderWithAccountAndDeadline($accountEmail, $order_Deadline);
 					$displayStr = displayReportForAccount($orders);
 					sendEmailNotification($accountEmail,$order_Deadline,$pickupOption, $displayStr);
 					echo $displayStr;
 				}
+				
 			}
 		}
 	displayPageEnd();
