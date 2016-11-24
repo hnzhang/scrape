@@ -132,7 +132,7 @@ function sendEmailNotification($emailAddress, $orderDeadline, $pickupOption, $em
 
 	$message .= $email_body;
 
-	$message .= "<p>If you CANNOT see order details here or have WRONG order details, Please notify fundraising@surreynights.com </p>";
+	$message .= "<p>If you CANNOT see order details here or have WRONG order details, Please notify fundraising@surreyknights.com </p>";
 	$message .= "<p> </p>";
 	$message .= "<p> Ususally order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
 	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
