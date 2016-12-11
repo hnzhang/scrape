@@ -8,6 +8,7 @@ require_once dirname(__FILE__) . '/../Classes/PHPExcel.php';
 $Spreadsheet_ID = "1VTseFM0BM-x-haK_We9vsd0sWAYrC7gkGU1mSWsOxBg";//new id
 //$Spreadsheet_ID = '1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y';
 $GetOrder_URL = "https://spreadsheets.google.com/feeds/list/".$Spreadsheet_ID."/3/public/values?alt=json";
+
 function isSuperEmail($emailAddress) {
 	$emailList = array("giftcards@surreyknights.com", "fundraising@surreyknights.com");
 	return in_array($emailAddress, $emailList);
@@ -43,44 +44,11 @@ function getTemplateInfo() {
 	}
 	return array($Special_Messages, $PickupOptions, $Order_Deadline);
 }
-//if $accountEmail is zero sized, return all
 
-function getOrderWithAccountAndDeadline_old($accountEmail, $deadline) {
-	$Spreadsheet_ID_old = '1Kp0Lcneb_UUjE3Vi0FjpCNbXdTRLATjSpyNnLJx-E9Y';
-
-	$GetOrder_URL_old = "https://spreadsheets.google.com/feeds/list/".$Spreadsheet_ID_old."/3/public/values?alt=json";
-	$orders = array();
-
-	$json = file_get_contents($GetOrder_URL_old);
-	$data = json_decode($json, TRUE);
-	$rows = $data['feed']['entry'];
-	foreach($rows as $item) {
-		$account_email = $item['gsx$account']['$t'];
-		$orderDeadline = $item['gsx$orderdeadline']['$t'];
-
-		if($orderDeadline === $deadline && ( strlen($accountEmail) === 0  || $accountEmail == $account_email ) ) {
-			$timeStamp = $item['gsx$timestamp']['$t'];
-			$pickup =  $item['gsx$pickup']['$t'];
-			$vendor = $item['gsx$vendor']['$t'];
-			$price = $item['gsx$price']['$t'];
-			$remit = $item['gsx$remit']['$t'];
-
-			$count = $item['gsx$count']['$t'];
-
-			$remitRate = trim($remit);
-			$remitRateFloat = floatVal($remitRate)/100.0;//trim off % sign;
-			$countInt = intVal($count);
-
-			$price = trim($price);
-			$price = substr($price, 1, strlen($price) - 1);
-			$priceFloat= floatVal($price);
-
-			array_push($orders, array($timeStamp, $account_email, $pickup, $vendor, $priceFloat, $remitRateFloat, $countInt));
-		}
-	}
-	return $orders;
-}
-
+/*
+To return all order details of given accountEmail and deadline
+ if $accountEmail is zero sized, return all order details of given deadline
+*/
 function getOrderWithAccountAndDeadline($accountEmail, $deadline) {
 	global $GetOrder_URL ;
 	$orders = array();
@@ -160,7 +128,7 @@ function reportByPickupOptionAndAccount( $orders) {
 		$count = $order[6];
 		$price = $order[4];
 
-		$subtotal= $price * $count;
+		$subtotal   = $price * $count;
 		$remitTotal = $subtotal * $remitRate;
 		$pickupItem = array($order[3],$price, $count, $subtotal, $remitTotal);//vendor, price, count, subtotal, remit
 
@@ -176,12 +144,12 @@ function reportByPickupOptionAndAccount( $orders) {
 		}
 
 		if(!array_key_exists($accountEmail, $accountSummary)){
-			$accountSummary[$accountEmail] = array( $subtotal,$subtotal - $remitTotal, $remitTotal);
+			$accountSummary[$accountEmail] = array( $subtotal, $subtotal - $remitTotal, $remitTotal);
 		} else {
-			$accountSummaryPerClient = $accountSummary[$accountEmail];
-			$accountSummaryPerClient[0] = $accountSummaryPerClient[0] + $subtotal;
-			$accountSummaryPerClient[1] = $accountSummaryPerClient[1] + $subtotal- $remitTotal;
-			$accountSummaryPerClient[2] = $accountSummaryPerClient[2] + $remitTotal;
+			//update fields
+			$accountSummary[$accountEmail][0] += $subtotal;
+			$accountSummary[$accountEmail][1] += $subtotal - $remitTotal;
+			$accountSummary[$accountEmail][2] += $remitTotal;
 		}
 	}
 	return array($orderGrp, $accountSummary);
@@ -261,8 +229,8 @@ function exportExcelReportForPickup($data, $xlsFileName) {
 							->setCellValue('C1', 'Vendor')
 							->setCellValue('D1', 'Price')
 							->setCellValue('E1', 'Count')
-							->setCellValue('F1', 'Remit')
-							->setCellValue('G1', 'Total Due');
+							->setCellValue('F1', 'Total')
+							->setCellValue('G1', 'Remit');
 
 		$rowId = 2;
 	foreach($pickupList as $pickup => $pickupAccounts) {
@@ -345,8 +313,8 @@ function displayReportForPickup($data) {
 				<th  style="width: 250px; text-align: left;border: 1px solid black">Vendor</th>
 				<th  style="width: 100px; text-align: left;border: 1px solid black">Price</th>
 				<th  style="width: 50px; text-align: left;border: 1px solid black">Count</th>
+				<th  style="width: 100px; text-align: left;border: 1px solid black">Total</th>
 				<th  style="width: 100px; text-align: left;border: 1px solid black">Remit</th>
-				<th  style="width: 100px; text-align: left;border: 1px solid black">Total Due</th>
 			</tr>
 		';
 		foreach ($pickupAccounts as $accountEmail => $orders) {
@@ -381,8 +349,8 @@ function displayReportForPickup($data) {
 	foreach ($accountSummary as $accountEmail => $summary) {
 		$summaryDisplayStr .='<tr>
  				<td  style="width: 150px; text-align: left;border: 1px solid black">'.$accountEmail.'</th>
-				<td  style="width: 80px; text-align: left;border: 1px solid black">'. money_format('%i',$summary[0]) . '</th>
-				<td  style="width: 80px; text-align: left;border: 1px solid black">'. money_format('%i',$summary[1]) . '</th>
+				<td  style="width: 80px; text-align: left;border: 1px solid black">'.  money_format('%i',$summary[0]) . '</th>
+				<td  style="width: 80px; text-align: left;border: 1px solid black">'.  money_format('%i',$summary[1]) . '</th>
 				<td  style="width: 120px; text-align: left;border: 1px solid black">'. money_format('%i',$summary[2]) . '</th>
 			</tr>';
 	}
@@ -455,35 +423,48 @@ function exportExcelReportForPurchase($data, $xlsFileName) {
 							 ->setDescription("This is report for Vendor and Pricing.")
 							 ->setKeywords("Vendor and Pricing Fundraising SKSC")
 							 ->setCategory("SKSC Fundraising");
-
 	$activeSheet = $objPHPExcel->setActiveSheetIndex(0);
+
 	$rowId = 1;
 	$orderSummary = $data[0];
 	$vendorSummary = $data[1];
+	$activeSheet->setCellValue('A'.$rowId, 'Vendor');//TODO: set format to bold
+	$activeSheet->setCellValue('B'.$rowId, 'Price');
+	$activeSheet->setCellValue('C'.$rowId, 'Count');
+	$activeSheet->setCellValue('D'.$rowId, 'Total');
+	$rowId = $rowId + 1;
 	foreach($orderSummary as $vendorName => $orders) {
-		$activeSheet->setCellValue('A'.$rowId, $VendorName);//TODO: set format to bold
-		$rowId = $rowId + 1;
-		$activeSheet->setCellValue('A'.$rowId, 'price');
-		$activeSheet->setCellValue('B'.$rowId, 'Count');
-		$activeSheet->setCellValue('C'.$rowId, 'Total');
-		$rowId = $rowId + 1;
 		foreach($orders as $priceTag => $orderItem) {
-			$activeSheet->setCellValue('A'.$rowId, $priceTag);
-			$activeSheet->setCellValue('B'.$rowId, $orderItem[0]);
-			$activeSheet->setCellValue('C'.$rowId, money_format('%i',$orderItem[1]));
+			$activeSheet->setCellValue('A'.$rowId, $vendorName);//TODO: set format to bold
+			$activeSheet->setCellValue('B'.$rowId, money_format('%i',$priceTag));
+			$activeSheet->setCellValue('C'.$rowId, $orderItem[0]);
+			$activeSheet->setCellValue('D'.$rowId, money_format('%i',$orderItem[1]));
 			$rowId = $rowId + 1;
 		}
 	}
+	//format data
+	$activeSheet->getStyle('B2:B'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+	$activeSheet->getStyle('D2:D'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+
 
 	$rowId = 1;
-	$activeSheet->setCellValue('F'.$rowId, 'Vendor');
-	$activeSheet->setCellValue('G'.$rowId, 'Price');
+	$activeSheet->setCellValue('G'.$rowId, 'Vendor');
+	$activeSheet->setCellValue('H'.$rowId, 'Price');
 	$rowId = $rowId + 1;
 	foreach($vendorSummary as $vendorName => $total) {
-		$activeSheet->setCellValue('F'.$rowId, $vendorName);
-		$activeSheet->setCellValue('G'.$rowId, money_format('%i',$total));
+		$activeSheet->setCellValue('G'.$rowId, $vendorName);
+		$activeSheet->setCellValue('H'.$rowId, money_format('%i',$total));
 		$rowId = $rowId + 1;
 	}
+	$activeSheet->getStyle('H2:H'.$rowId)
+			->getNumberFormat()
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_CURRENCY_USD_SIMPLE);
+
+
 
 	//save to local
 	$xlsFilePath = dirname(__FILE__) . '/' . $xlsFileName;

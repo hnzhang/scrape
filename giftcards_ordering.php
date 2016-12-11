@@ -75,26 +75,24 @@ if($VisibleCtl) {
 	$tempplateInfo = getTemplateInfo();
 	$Special_Messages = $tempplateInfo[0];
 	$PickupOptions= $tempplateInfo[1];
+
 	$Order_Deadline = $tempplateInfo[2];
-	//m/d/y
 	$deadline_date = strtotime($Order_Deadline);
 
 	$Order_Deadline_Display = date("M/d/Y",$deadline_date);
 
-	$Current_Time_Display = getCurrentDateTime();
-
 	$today = time();
 	$deadline_str = date("Y-m-d", $deadline_date);
 	$today_str =  date("Y-m-d", $today);
-	
-	if($today_str < $deadline_str){
+		
+	if($today_str <= $deadline_str ){
 		$System_Enabled = true;
 		getInventoryInfo();
 	} else {
 		$System_Enabled = false;
-		$Special_Messages = "";
-		$Error_Message =  "Order deadline ".$Order_Deadline." expired, cannot order Anymore. Please wait for next time";
+		$Special_Messages =  "Order deadline ".$Order_Deadline." expired, cannot order Anymore. Please wait for next time";
 	}
+	$Current_Time_Display = getCurrentDateTime();
 }
 ?>
 

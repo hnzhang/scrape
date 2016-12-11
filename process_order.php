@@ -91,33 +91,6 @@ function postOrderWithCurl( $order_details){
 	return $success;
 }
 
-function sendEmailNotificationBeforeSubmit($emailAddress, $logEmail, $orderDeadline, $pickupOption, $email_body, $stageInfo) {
-	//global $orderDetailsInHTML;
-	$to = strip_tags($logEmail);
-	$subject = 'GiftCard Order--Debug Logging; Pickup at ['.$pickupOption ."]";
-
-	$headers = "From: giftcards@surreyknights.net\r\n";
-	$headers .= "Reply-To: giftcards@surreyknights.net\r\n";
-	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-
-	$message .= "<p>Order Summary</p>";
-	$message .= $email_body;
-
-	$message .= "<p>This should cover all you have ordered in this Fundraising run </p>";
-	$message .= "<p></p>";
-	$message .= "<p>If you CANNOT see order details here or have WRONG order details, Please notify fundraising@surreynights.com </p>";
-	$message .= "<p>Email ID:".$emailAddress." </p>";
-	$message .= "<p>Order Stage Info:".$stageInfo." </p>";
-	$message .= "<p> Ususally Order will be ready in 5-7 business days of <strong>Order deadline</strong>. Order Deadline for this order is ";
-	$message .= "<strong>" .$orderDeadline."</strong> <p> ";
-	$message .= "<p> You make payment of the order onsite of pickup.</p> ";
-
-	if(mail($to, $subject, $message, $headers) === true) {
-		echo  "<br>Logging...<br>";
-	}
-}
-
-
 
 function sendEmailNotification($emailAddress, $orderDeadline, $pickupOption, $email_body) {
 	//global $orderDetailsInHTML;

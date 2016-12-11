@@ -30,7 +30,7 @@ if( array_key_exists($accountKey,$_REQUEST)) {
 		$deadline_str = date("Y-m-d", $deadline_date);
 		$today_str =  date("Y-m-d", $today);
 		
-		if($today_str < $deadline_str || array_key_exists($accountKey2,$_REQUEST))
+		if($today_str <= $deadline_str || array_key_exists($accountKey2,$_REQUEST))
 		{
 			$displayStr .= '
 				<tr>

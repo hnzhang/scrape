@@ -11,8 +11,12 @@ require "giftcards_common.php";
 		echo "Please print this report out.  ";
 		echo 'Or download Report in Excel from <a href="' . $xlsFileName . '">Here</a><br><br>';
 		$orders = getOrderWithAccountAndDeadline("",$deadline);
-		//$orders = getOrderWithAccountAndDeadline_old("",$deadline);
 		$data = reportByPickupOptionAndAccount($orders);
+		/*turn off debug 
+		echo '<br>';
+		var_dump( $data );
+		echo '<br>';
+		*/
 		exportExcelReportForPickup($data,$xlsFileName );
 
 		echo displayReportForPickup($data);
@@ -23,7 +27,6 @@ require "giftcards_common.php";
 		echo 'Or download Report in Excel from <a href="' . $xlsFileName . '">Here</a><br><br>';
 
 		$orders = getOrderWithAccountAndDeadline("",$deadline);
-		//$orders = getOrderWithAccountAndDeadline_old("",$deadline);
 		$data = reportByVendorAndPrice($orders);
 		exportExcelReportForPurchase($data, $xlsFileName);
 		echo displayReportForPurchase($data);
